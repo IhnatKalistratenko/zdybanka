@@ -4,3 +4,8 @@ GET {{API_HostAddress}}/api/Tag
 Accept: application/json
 
 ###
+
+GET {{API_HostAddress}}/api/Telemetry/health
+Accept: application/json
+
+###
