@@ -1,0 +1,1028 @@
+openapi: 3.0.4
+
+info:
+  title: Zdybanka API
+  description: API
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:5071/api
+    description: Localhost url
+
+paths:
+
+  # Users
+  /users:
+    post:
+      tags:
+        - Users
+      summary: Create a user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      operationId: getUsers
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get a user by ID
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Users
+      summary: Update a user
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Users
+      summary: Delete a user
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User successfully deleted
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 
+
+  # Tags
+  /tags:
+    post:
+      tags:
+        - Tags
+      summary: Create a tag
+      operationId: createTag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Tag successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Tags
+      summary: Get all tags
+      operationId: getTags
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+
+  /tags/{id}:
+    get:
+      tags:
+        - Tags
+      summary: Get a tag by ID
+      operationId: getTagById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Tag ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tag successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '404':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Tags
+      summary: Update a tag
+      operationId: updateTag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Tag ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTagRequest'
+      responses:
+        '200':
+          description: Tag successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Tags
+      summary: Delete a tag
+      operationId: deleteTag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Tag ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tag successfully deleted
+        '404':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Chats
+  /chats:
+    post:
+      tags:
+        - Chats
+      summary: Create a chat
+      operationId: createChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatRequest'
+      responses:
+        '201':
+          description: Chat successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Chats
+      summary: Get all chats
+      operationId: getChats
+      responses:
+        '200':
+          description: List of chats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatResponse'
+
+  /chats/{id}:
+    get:
+      tags:
+        - Chats
+      summary: Get a chat by ID
+      operationId: getChatById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Chat ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chat successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '404':
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Chats
+      summary: Update a chat
+      operationId: updateChat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Chat ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChatRequest'
+      responses:
+        '200':
+          description: Chat successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Chats
+      summary: Delete a chat
+      operationId: deleteChat
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Chat ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Chat successfully deleted
+        '404':
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events:
+    post:
+      tags:
+        - Events
+      summary: Create an event
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Events
+      summary: Get events
+      operationId: getEvents
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter events by status
+          schema:
+            type: string
+            enum:
+              - active
+              - completed
+              - cancelled
+
+        - name: creatorId
+          in: query
+          required: false
+          description: Filter events created by a specific user
+          schema:
+            type: string
+            format: uuid
+
+        - name: startFrom
+          in: query
+          required: false
+          description: Return events starting at or after this time
+          schema:
+            type: string
+            format: date-time
+
+        - name: endTo
+          in: query
+          required: false
+          description: Return events ending before or at this time
+          schema:
+            type: string
+            format: date-time
+
+        - name: latitude
+          in: query
+          required: false
+          description: Latitude of the center point for geographic filtering
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+
+        - name: longitude
+          in: query
+          required: false
+          description: Longitude of the center point for geographic filtering
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+
+        - name: radius
+          in: query
+          required: false
+          description: Search radius around the specified coordinates in meters
+          schema:
+            type: number
+            format: double
+            minimum: 0
+
+        - name: page
+          in: query
+          required: false
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+
+        - name: pageSize
+          in: query
+          required: false
+          description: Number of events per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/{id}:
+    get:
+      tags:
+        - Events
+      summary: Get an event by ID
+      operationId: getEventById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Events
+      summary: Update an event
+      operationId: updateEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Events
+      summary: Delete an event
+      operationId: deleteEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Event ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Event successfully deleted
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        
+      
+  
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+        - details
+        - requestId
+      properties: 
+        error:
+          type: string
+          example: User not found
+
+        code:
+          type: string
+          example: USER_NOT_FOUND
+
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - username      
+    CreateUserRequest:
+      type: object
+      required: 
+        - email
+        - username
+        - password  
+    UpdateUserRequest:
+      type: object
+      properties: 
+        username:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          maxLength: 255
+    TagResponse:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the tag
+
+        name:
+          type: string
+          maxLength: 50
+          description: Unique lowercase tag name
+          example: music
+
+    CreateTagRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          description: Unique lowercase tag name
+          example: music
+
+    UpdateTagRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          description: Unique lowercase tag name
+          example: concerts
+    ChatResponse:
+      type: object
+      required:
+        - id
+        - eventId
+        - name
+        - description
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the chat
+
+        eventId:
+          type: string
+          format: uuid
+          description: Identifier of the event associated with the chat
+
+        name:
+          type: string
+          maxLength: 50
+          description: Chat name
+          example: Weekend meetup
+
+        description:
+          type: string
+          description: Chat description
+          example: Chat for event participants
+
+        status:
+          type: string
+          enum:
+            - active
+            - closed
+          description: Current chat status
+          example: active
+
+    CreateChatRequest:
+      type: object
+      required:
+        - eventId
+        - name
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Identifier of the event associated with the chat
+
+        name:
+          type: string
+          maxLength: 50
+          description: Chat name
+          example: Weekend meetup
+
+        description:
+          type: string
+          default: ""
+          description: Chat description
+          example: Chat for event participants
+
+        status:
+          type: string
+          enum:
+            - active
+            - closed
+          default: active
+          description: Initial chat status
+
+    UpdateChatRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          description: Chat name
+          example: Updated meetup chat
+
+        description:
+          type: string
+          description: Chat description
+          example: Updated chat description
+
+        status:
+          type: string
+          enum:
+            - active
+            - closed
+          description: Current chat status
+          example: active
+    EventResponse:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - creatorId
+        - createdAt
+        - startTime
+        - endTime
+        - maxParticipants
+        - coordinates
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the event
+
+        name:
+          type: string
+          maxLength: 50
+          description: Event name
+          example: Weekend meetup
+
+        description:
+          type: string
+          nullable: true
+          description: Event description
+          example: Let's meet and spend the weekend together
+
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Human-readable event address
+          example: 10 Lesi Ukrainky Street
+
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - cancelled
+          description: Current event status
+          example: active
+
+        creatorId:
+          type: string
+          format: uuid
+          description: ID of the user who created the event
+
+        createdAt:
+          type: string
+          format: date-time
+          description: Event creation time
+
+        startTime:
+          type: string
+          format: date-time
+          description: Event start time
+
+        endTime:
+          type: string
+          format: date-time
+          description: Event end time
+
+        maxParticipants:
+          type: integer
+          minimum: 1
+          description: Maximum number of event participants
+          example: 20
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+    Coordinates:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 50.7472
+
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: 25.3254
+
+    CreateEventRequest:
+      type: object
+      required:
+        - name
+        - creatorId
+        - startTime
+        - endTime
+        - maxParticipants
+        - coordinates
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          example: Weekend meetup
+
+        description:
+          type: string
+          nullable: true
+          example: Let's meet and spend the weekend together
+
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+          example: 10 Lesi Ukrainky Street
+
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - cancelled
+          default: active
+
+        creatorId:
+          type: string
+          format: uuid
+
+        startTime:
+          type: string
+          format: date-time
+
+        endTime:
+          type: string
+          format: date-time
+
+        maxParticipants:
+          type: integer
+          minimum: 1
+          example: 20
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+    UpdateEventRequest:
+      type: object
+      required:
+        - name
+        - startTime
+        - endTime
+        - maxParticipants
+        - coordinates
+        - status
+      properties:
+        name:
+          type: string
+          maxLength: 50
+
+        description:
+          type: string
+          nullable: true
+
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - cancelled
+
+        startTime:
+          type: string
+          format: date-time
+
+        endTime:
+          type: string
+          format: date-time
+
+        maxParticipants:
+          type: integer
+          minimum: 1
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+    EventListResponse:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventResponse'
+
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+
+        pageSize:
+          type: integer
+          minimum: 1
+          example: 20
+
+        total:
+          type: integer
+          minimum: 0
+          example: 42
