@@ -1,9 +1,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using Zdybanka.Application.Services;
+using Zdybanka.Core;
 using Zdybanka.Data;
 using Zdybanka.Data.Repositories;
-using Zdybanka.Infrastructure;
+using Zdybanka.Infrastructure.PasswordHasher;
 
 namespace Zdybanka.API;
 
@@ -16,10 +17,15 @@ public class Program
         // Add services to the container.
         builder.Services.AddDbContext<ZdybankaContext>(options =>
         {
-            options.UseNpgsql(connectionString: builder.Configuration.GetConnectionString("ConnectionString"), x => x.UseNetTopologySuite());
+            options.UseNpgsql(connectionString: builder.Configuration.GetConnectionString("ConnectionString"), x =>
+            {
+                x.UseNetTopologySuite();
+                x.MapEnum<ChatStatus>("chat_status");
+                x.MapEnum<EventStatus>("event_status");
+            });
         });
 
-        builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+        builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         builder.Services.AddScoped<UserService>();
         builder.Services.AddScoped<TagService>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();

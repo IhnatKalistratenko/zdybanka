@@ -1,5 +1,6 @@
 using BCrypt.Net;
-namespace Zdybanka.Infrastructure;
+
+namespace Zdybanka.Infrastructure.PasswordHasher;
 
 public class BcryptPasswordHasher : IPasswordHasher
 {

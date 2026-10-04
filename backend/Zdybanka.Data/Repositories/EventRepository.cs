@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Zdybanka.Core;
+using Zdybanka.Core.Filters;
 using Zdybanka.Data.DTO;
 
 namespace Zdybanka.Data.Repositories;
@@ -23,9 +24,41 @@ public class EventRepository : IEventRepository
         return _context.Events.FirstAsync(e => e.Id == id);
     }
 
-    public Task<List<Event>> GetEventsAsync()
+    private IQueryable<Event> ApplyEventFilters(IQueryable<Event> query, EventFilter filter)
     {
-        return _context.Events.ToListAsync();
+        if (filter.Status != null)
+        {
+            query = query.Where(e => e.Status == filter.Status);
+        }
+
+        if (filter.CreatorId != null)
+        {
+            query = query.Where(e => e.CreatorId == filter.CreatorId);
+        }
+
+        if (filter.StartFrom != null)
+        {
+            query = query.Where(e => e.StartTime >= filter.StartFrom);
+        }
+
+        if (filter.EndTo != null)
+        {
+            query = query.Where(e => e.EndTime <= filter.EndTo);
+        }
+
+        if (filter.UserLocation != null)
+        {
+            query = query.Where(e => e.Coordinates.IsWithinDistance(filter.UserLocation, filter.Radius));
+        }
+        
+        return query.Skip((filter.Page - 1) * filter.PageSize).Take(filter.PageSize);
+    }
+
+    public Task<List<Event>> GetEventsAsync(EventFilter filter)
+    {
+        IQueryable<Event> query = _context.Events;
+        
+        return ApplyEventFilters(query, filter).ToListAsync();
     }
 
     public List<Event> GetEventsByCreator(Guid creatorId)
@@ -53,7 +86,7 @@ public class EventRepository : IEventRepository
         return _context.SaveChangesAsync();
     }
 
-    public EntityEntry<Event> UpdateEventAsync(Event @event)
+    public EntityEntry<Event> UpdateEvent(Event @event)
     {
         return _context.Events.Update(@event);
     }

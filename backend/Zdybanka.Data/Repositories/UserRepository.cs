@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Zdybanka.Core;
@@ -13,9 +14,9 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public Task<User> GetUserByIdAsync(Guid id)
+    public Task<User?> GetUserByIdAsync(Guid id)
     {
-        return _context.Users.FirstAsync(u => u.Id == id);
+        return _context.Users.FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public Task<List<User>> GetUsersAsync()
@@ -35,13 +36,20 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
     }
 
-    public void UpdateUser(User user)
+    public User UpdateUser(User user)
     {
-        _context.Users.Update(user);
+        EntityEntry<User> updatedUserEntry = _context.Users.Update(user);
+
+        return updatedUserEntry.Entity;
     }
 
     public Task<int> SaveChangesAsync()
     {
         return _context.SaveChangesAsync();
+    }
+
+    public Task<User?> FindUser(Expression<Func<User, bool>> predicate)
+    {
+        return _context.Users.FirstOrDefaultAsync(predicate);
     }
 }

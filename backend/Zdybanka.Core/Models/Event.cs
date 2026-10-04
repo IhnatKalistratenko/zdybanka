@@ -25,8 +25,7 @@ public partial class Event
     public int MaxParticipants { get; set; }
 
     public Point Coordinates { get; set; } = null!;
-
-    public string? MapIconUrl { get; set; }
+    public EventStatus Status { get; set; }
 
     public virtual Chat? Chat { get; set; }
 

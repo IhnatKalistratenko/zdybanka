@@ -12,6 +12,8 @@ public partial class Chat
     public string Name { get; set; } = null!;
 
     public string Description { get; set; } = null!;
+    
+    public ChatStatus Status { get; set; }
 
     public virtual Event Event { get; set; } = null!;
 
