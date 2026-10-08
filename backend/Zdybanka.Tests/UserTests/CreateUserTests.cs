@@ -19,7 +19,7 @@ public class CreateUserTests : UserTest
         var password = "password";
         
         // Act
-        UserResponse userResponse = await _service.CreateUser(new CreateUserDto()
+        UserResponse userResponse = await _service.CreateUserAsync(new CreateUserRequest()
         {
             Username = username,
             Password = password,
@@ -41,7 +41,7 @@ public class CreateUserTests : UserTest
         // Arrange
         var existingUsername = ZdybankaContextFactory.Username1;
         var password = "password";
-        var dto = new CreateUserDto()
+        var dto = new CreateUserRequest()
         {
             Username = existingUsername,
             Password = password,
@@ -51,7 +51,7 @@ public class CreateUserTests : UserTest
         
         // Act
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(async () => await _service.CreateUser(dto));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await _service.CreateUserAsync(dto));
         var userCountAfter = await _context.Users.CountAsync(u => u.Username == existingUsername);
         Assert.Equal(userCountBefore, userCountAfter);
     }

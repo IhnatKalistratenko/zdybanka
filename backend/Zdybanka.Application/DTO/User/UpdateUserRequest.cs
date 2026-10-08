@@ -1,6 +1,6 @@
 namespace Zdybanka.Application.DTO.User;
 
-public record UpdateUserDto()
+public record UpdateUserRequest()
 {
     public Guid Id { get; set; }
     public string? Username { get; set; }

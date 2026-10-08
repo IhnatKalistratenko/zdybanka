@@ -36,17 +36,17 @@ public class UserService(IUserRepository repository, IPasswordHasher hasher)
         };
     }
 
-    public async Task<UserResponse> CreateUser(CreateUserDto dto)
+    public async Task<UserResponse> CreateUserAsync(CreateUserRequest request)
     {
-        if (await _repository.FindUser(u => u.Username == dto.Username) != null)
+        if (await _repository.FindUser(u => u.Username == request.Username) != null)
         {
-            throw new ArgumentException($"User with username {dto.Username} already exists");
+            throw new ArgumentException($"User with username {request.Username} already exists");
         }
         
         User user = new User()
         {
-            Username = dto.Username,
-            PasswordHash = _hasher.HashPassword(dto.Password),
+            Username = request.Username,
+            PasswordHash = _hasher.HashPassword(request.Password),
         };
 
         User dbUser = await _repository.AddUserAsync(user);
@@ -60,12 +60,12 @@ public class UserService(IUserRepository repository, IPasswordHasher hasher)
         };
     }
 
-    public async Task RemoveUser(Guid id)
+    public async Task RemoveUserAsync(Guid id)
     {
         User? user = await _repository.GetUserByIdAsync(id);
         if (user == null)
         {
-            throw new ArgumentException("User not found");
+            throw new KeyNotFoundException("User not found");
         }
 
         _repository.RemoveUser(user);
@@ -73,32 +73,32 @@ public class UserService(IUserRepository repository, IPasswordHasher hasher)
         await _repository.SaveChangesAsync();
     }
 
-    public async Task<UserResponse> UpdateUser(UpdateUserDto dto)
+    public async Task<UserResponse> UpdateUserAsync(UpdateUserRequest request)
     {
-        User? user = await _repository.GetUserByIdAsync(dto.Id);
+        User? user = await _repository.GetUserByIdAsync(request.Id);
         if (user == null)
         {
             throw new KeyNotFoundException();
         }
 
-        if (await _repository.FindUser(u => u.Username == dto.Username) != null)
+        if (await _repository.FindUser(u => u.Username == request.Username) != null)
         {
             throw new ArgumentException("Username already exists");
         }
 
-        if (!_hasher.VerifyPassword(dto.ConfirmPassword, user.PasswordHash))
+        if (!_hasher.VerifyPassword(request.ConfirmPassword, user.PasswordHash))
         {
             throw new UnauthorizedAccessException("Wrong password");
         }
 
-        if (dto.Username != null)
+        if (request.Username != null)
         {
-            user.Username = dto.Username;
+            user.Username = request.Username;
         }
 
-        if (dto.NewPassword != null)
+        if (request.NewPassword != null)
         {
-            user.PasswordHash = _hasher.HashPassword(dto.NewPassword);
+            user.PasswordHash = _hasher.HashPassword(request.NewPassword);
         }
 
         User updatedUser = _repository.UpdateUser(user);
