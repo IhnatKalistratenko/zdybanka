@@ -1,6 +1,6 @@
 using Zdybanka.Application.DTO.Chat;
 using Zdybanka.Core;
-using Zdybanka.Data.Repositories;
+using Zdybanka.Core.StorageInterfaces;
 
 namespace Zdybanka.Application.Services;
 
@@ -19,7 +19,6 @@ public class ChatService(IChatRepository repository)
         };
         
         await _repository.AddChatAsync(newChat);
-        await _repository.SaveChangesAsync();
 
         return new ChatResponse(newChat);
     }
@@ -48,12 +47,12 @@ public class ChatService(IChatRepository repository)
         return chats.Select(chat => new ChatResponse(chat)).ToList();
     }
 
-    public async Task<ChatResponse> UpdateChat(UpdateChatDto dto)
+    public async Task<ChatResponse> UpdateChat(Guid id, UpdateChatDto dto)
     {
-        Chat? dbChat = await _repository.GetChatByIdAsync(dto.Id);
+        Chat? dbChat = await _repository.GetChatByIdAsync(id);
         if (dbChat == null)
         {
-            throw new KeyNotFoundException($"Chat with id {dto.Id} not found");
+            throw new KeyNotFoundException($"Chat with id {id} not found");
         }
 
         if (dto.Name != null)

@@ -7,12 +7,12 @@ namespace Zdybanka.Tests.UserTests;
 
 public abstract class UserTest : ZdybankaTest
 {
-    protected readonly UserService _service;
-    protected readonly IPasswordHasher _passwordHasher;
+    protected readonly UserService Service;
+    protected readonly IPasswordHasher PasswordHasher;
 
-    public UserTest() : base()
+    protected UserTest() : base()
     {
-        _passwordHasher = new BcryptPasswordHasher();
-        _service = new UserService(new UserRepository(_context), _passwordHasher);
+        PasswordHasher = new BcryptPasswordHasher();
+        Service = new UserService(new UserRepository(_context), PasswordHasher);
     }
 }

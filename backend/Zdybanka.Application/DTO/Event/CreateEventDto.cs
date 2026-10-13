@@ -14,5 +14,5 @@ public record CreateEventDto
     public DateTime EndTime { get; set; }
     public int MaxParticipants { get; set; }
     public required Point Coordinates { get; set; }
-    public List<TagDto> Tags { get; set; } = new List<TagDto>();
+    public List<TagResponse> Tags { get; set; } = new List<TagResponse>();
 }

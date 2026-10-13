@@ -27,4 +27,9 @@
       <ProjectReference Include="..\Zdybanka.Infrastructure\Zdybanka.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="ChatTests\" />
+      <Folder Include="EventTests\" />
+    </ItemGroup>
+
 </Project>

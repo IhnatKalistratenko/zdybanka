@@ -27,7 +27,7 @@ public class UpdateUserTests : UserTest
             NewPassword = _newPassword
         };
         // Act
-        UserResponse response = await _service.UpdateUserAsync(request);
+        UserResponse response = await Service.UpdateUserAsync(request);
 
         // Assert
         Assert.NotNull(response);
@@ -43,8 +43,8 @@ public class UpdateUserTests : UserTest
         Assert.Equal(_newUsername, response.Username);
         
         // Check password
-        Assert.False(_passwordHasher.VerifyPassword(_oldPassword, updatedUser.PasswordHash));
-        Assert.True(_passwordHasher.VerifyPassword(_newPassword, updatedUser.PasswordHash));
+        Assert.False(PasswordHasher.VerifyPassword(_oldPassword, updatedUser.PasswordHash));
+        Assert.True(PasswordHasher.VerifyPassword(_newPassword, updatedUser.PasswordHash));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class UpdateUserTests : UserTest
         // Act
        
         // Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () => await _service.UpdateUserAsync(dto));
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () => await Service.UpdateUserAsync(dto));
     }
 
     [Fact]
@@ -83,13 +83,13 @@ public class UpdateUserTests : UserTest
         // Act
         
         // Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await _service.UpdateUserAsync(request));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await Service.UpdateUserAsync(request));
         
         var dbUserAfter = await _context.Users.AsNoTracking().FirstAsync(u => u.Id == userId);
         Assert.Equal(_oldUsername, dbUserAfter.Username);
         Assert.NotEqual(_newPassword, dbUserAfter.PasswordHash);
-        Assert.False(_passwordHasher.VerifyPassword(_newPassword, dbUserAfter.PasswordHash));
-        Assert.True(_passwordHasher.VerifyPassword(_oldPassword, dbUserAfter.PasswordHash));
+        Assert.False(PasswordHasher.VerifyPassword(_newPassword, dbUserAfter.PasswordHash));
+        Assert.True(PasswordHasher.VerifyPassword(_oldPassword, dbUserAfter.PasswordHash));
     }
 
     [Fact]
@@ -111,12 +111,12 @@ public class UpdateUserTests : UserTest
         // Act
 
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(async () => await _service.UpdateUserAsync(request));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await Service.UpdateUserAsync(request));
         
         var dbUserAfter = await _context.Users.AsNoTracking().FirstAsync(u => u.Id == userId);
         Assert.Equal(_oldUsername, dbUserAfter.Username);
         Assert.NotEqual(_newPassword, dbUserAfter.PasswordHash);
-        Assert.False(_passwordHasher.VerifyPassword(_newPassword, dbUserAfter.PasswordHash));
-        Assert.True(_passwordHasher.VerifyPassword(_oldPassword, dbUserAfter.PasswordHash));
+        Assert.False(PasswordHasher.VerifyPassword(_newPassword, dbUserAfter.PasswordHash));
+        Assert.True(PasswordHasher.VerifyPassword(_oldPassword, dbUserAfter.PasswordHash));
     }
 }

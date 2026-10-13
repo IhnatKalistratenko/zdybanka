@@ -1,7 +1,9 @@
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using Zdybanka.Application.Services;
 using Zdybanka.Core;
+using Zdybanka.Core.StorageInterfaces;
 using Zdybanka.Data;
 using Zdybanka.Data.Repositories;
 using Zdybanka.Infrastructure.PasswordHasher;
@@ -28,8 +30,12 @@ public class Program
         builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         builder.Services.AddScoped<UserService>();
         builder.Services.AddScoped<TagService>();
+        builder.Services.AddScoped<ChatService>();
+        builder.Services.AddScoped<EventService>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ITagRepository, TagRepository>();
+        builder.Services.AddScoped<IChatRepository, ChatRepository>();
+        builder.Services.AddScoped<IEventRepository, EventRepository>();
 
         builder.Services.AddCors(options =>
         {
@@ -40,9 +46,10 @@ public class Program
         });
 
         builder.Services.AddControllers();
+        
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
-
+        
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -52,12 +59,11 @@ public class Program
         }
 
         app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
+        
         app.UseCors();
 
-
+        app.UseAuthorization();
+        
         app.MapControllers();
 
         app.Run();

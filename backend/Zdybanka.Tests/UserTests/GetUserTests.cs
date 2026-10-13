@@ -16,7 +16,7 @@ public class GetUserTests : UserTest
         // Arrange
         
         // Act
-        var users = await _service.GetAllUsers();
+        var users = await Service.GetAllUsers();
         
         // Assert
         users.ShouldNotBeEmpty();
@@ -31,13 +31,13 @@ public class GetUserTests : UserTest
         var user = new User()
         {
             Username = username,
-            PasswordHash = _passwordHasher.HashPassword("password"),
+            PasswordHash = PasswordHasher.HashPassword("password"),
         };
         var dbUser = _context.Users.Add(user).Entity;
         await _context.SaveChangesAsync();
         
         // Act
-        var response = await _service.GetUserById(dbUser.Id);
+        var response = await Service.GetUserById(dbUser.Id);
         
         // Assert
         response.ShouldNotBeNull();
@@ -50,7 +50,7 @@ public class GetUserTests : UserTest
     {
         // Arrange
         var context = ZdybankaContextFactory.Create();
-        var service = new UserService(new UserRepository(context), _passwordHasher);
+        var service = new UserService(new UserRepository(context), PasswordHasher);
         var users = context.Users.ToList();
         context.Users.RemoveRange(users);
         await context.SaveChangesAsync();
@@ -71,6 +71,6 @@ public class GetUserTests : UserTest
         // Act
         
         // Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(async () => await _service.GetUserById(nonExistingId));
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () => await Service.GetUserById(nonExistingId));
     }
 }

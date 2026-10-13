@@ -1,8 +1,6 @@
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Zdybanka.Core;
 
-namespace Zdybanka.Data.Repositories;
+namespace Zdybanka.Core.StorageInterfaces;
 
 public interface IUserRepository
 {

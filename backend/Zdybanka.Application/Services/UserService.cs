@@ -1,6 +1,6 @@
 using Zdybanka.Application.DTO.User;
 using Zdybanka.Core;
-using Zdybanka.Data.Repositories;
+using Zdybanka.Core.StorageInterfaces;
 using Zdybanka.Infrastructure.PasswordHasher;
 
 namespace Zdybanka.Application.Services;
