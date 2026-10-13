@@ -1,6 +1,12 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'login.dart';
 
 class RegisterPage extends StatelessWidget {
+  static final String pageRoute = "/register";
+
   const RegisterPage({super.key});
 
   @override
@@ -94,26 +100,53 @@ class _RegisterFormState extends State<RegisterForm> {
             ),
           ),
           const SizedBox(height: 20,),
-          ElevatedButton(
-              onPressed: () {
-                if(!_formKey.currentState!.validate())
-                {
-                  return;
-                }
-                // ToDo: Sending data to server
+          Center(
+            child: Column(
+              children: [
+                ElevatedButton(
+                    onPressed: () {
+                      if(!_formKey.currentState!.validate())
+                      {
+                        return;
+                      }
+                      // ToDo: Sending data to server
 
-              },
-              style: ButtonStyle(
-                  fixedSize: WidgetStateProperty<Size>.fromMap(<WidgetStatesConstraint, Size> {
-                    WidgetState.any: Size(100, 50)
-                  }),
-                  textStyle: WidgetStateProperty.fromMap(<WidgetStatesConstraint, TextStyle> {
-                    WidgetState.any: TextStyle(
-                        fontWeight: FontWeight.bold
-                    )
-                  })
-              ),
-              child: Text("Sign up"))
+                    },
+                    style: ButtonStyle(
+                        fixedSize: WidgetStateProperty<Size>.fromMap(<WidgetStatesConstraint, Size> {
+                          WidgetState.any: Size(100, 50)
+                        }),
+                        textStyle: WidgetStateProperty.fromMap(<WidgetStatesConstraint, TextStyle> {
+                          WidgetState.any: TextStyle(
+                              fontWeight: FontWeight.bold
+                          )
+                        })
+                    ),
+                    child: Text("Sign up")),
+                SizedBox(height: 16),
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    children:
+                      [
+                        TextSpan(
+                          text: "Or if you are already with us you may "
+                        ),
+                        TextSpan(
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline
+                          ),
+                          text: "log in",
+                          recognizer: TapGestureRecognizer()..onTap = () {context.go(LoginPage.pageRoute);}
+                        )
+                      ]
+                  ),
+                )
+              ],
+            ),
+          )
         ],
       ),
     );
