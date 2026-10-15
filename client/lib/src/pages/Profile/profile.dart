@@ -1,5 +1,7 @@
+import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/pages/Profile/edit_profile.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,43 +13,186 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.fromLTRB(30, 50, 30, 0),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Username",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          label: Text("Exit"),
+                          onPressed: () {
+                            GoRouter.of(context).go(LoginPage.pageRoute);
+                          },
+                          style: ButtonStyle(
+                            shape: WidgetStatePropertyAll(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadiusGeometry.circular(8.0),
+                              ),
+                            ),
+                            side: WidgetStatePropertyAll(
+                              BorderSide(color: Colors.red[400]!),
+                            ),
+                            foregroundColor: WidgetStatePropertyAll(
+                              Colors.red[400],
+                            ),
+                          ),
+                          icon: Icon(Icons.exit_to_app, color: Colors.red[400]),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => EditProfile()),
+                        );
+                      },
+                      icon: Icon(Icons.edit),
+                      label: Text("Edit profile"),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 30),
+              Divider(thickness: 0.5),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
+                child: Column(
+                  children: [
+                    EventsList(
+                        title: "My events",
+                      icon: Icon(Icons.calendar_month),
+                    ),
+                    SizedBox(height: 10),
+                    EventsList(title: "Joined events",
+                      icon: Icon(Icons.people),),
+                    SizedBox(height: 10),
+                    EventsList(title: "Past events",
+                        icon: Icon(Icons.update),),
+                  ],
+                )
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class EventsList extends StatefulWidget {
+  final String title;
+  final Icon icon;
+  const EventsList({super.key, required this.title, required this.icon});
+
+  @override
+  State<EventsList> createState() => _EventsListState();
+}
+
+class _EventsListState extends State<EventsList> {
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      collapsedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      collapsedBackgroundColor: Colors.white,
+      backgroundColor: Colors.white,
+      title: RichText(
+        text: TextSpan(
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.3),
+          children: [
+            WidgetSpan(child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
+              child: widget.icon,
+            )),
+            TextSpan(
+                text: widget.title
+            )
+          ],
+        ),
+      ),
+      children: [
+        EventCard(),
+        EventCard(),
+        EventCard(),
+        EventCard(),
+      ],
+    );
+  }
+}
+
+
+class EventCard extends StatelessWidget {
+  const EventCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: () {},
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: EdgeInsets.fromLTRB(30, 50, 0, 0),
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Profile",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  letterSpacing: 1.5
-                ),),
-                SizedBox(height: 10,),
-                TextButton.icon(onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => EditProfile())
-                  );
-                }, icon: Icon(Icons.edit), label: Text("Edit profile"),)
-              ],
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Event name", style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 7),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    WidgetSpan(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
+                        child: Icon(Icons.calendar_month, size: 19),
+                      ),
+                    ),
+                    TextSpan(text: "29.10.2026"),
+                  ],
+                ),
+              ),
+              SizedBox(height: 7),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    WidgetSpan(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
+                        child: Icon(Icons.location_on, size: 19),
+                      ),
+                    ),
+                    TextSpan(text: "вул. Лесі Українки 15, м. Луцьк"),
+                  ],
+                ),
+              ),
+              SizedBox(height: 7),
+            ],
           ),
-          SizedBox(height: 30,),
-          Divider(
-            thickness: 0.5,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [Icon(Icons.keyboard_arrow_right, size: 35,)],
           ),
-          OutlinedButton(onPressed: () {},
-              child: Text("My events")),
-          OutlinedButton(onPressed: () {},
-              child: Text("Joined events")),
-          OutlinedButton(onPressed: () {},
-              child: Text("Visited events")),
-          OutlinedButton(onPressed: () {},
-              child: Text("Exit profile")),
         ],
       ),
     );
