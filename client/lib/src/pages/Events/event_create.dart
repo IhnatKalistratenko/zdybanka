@@ -1,330 +1,416 @@
-import 'dart:math';
-
-import 'package:client/src/pages/Events/choose_tags.dart';
-import 'package:client/src/widgets/AppTextInput.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_multi_selector/BottomSheet/multi_selector_bottom_sheet_field.dart';
-import 'package:flutter_multi_selector/Utils/multi_selector_item.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
-
+import '../../models/create_event_request.dart';
+import '../../models/event_tag.dart';
+import '../../services/event_service.dart';
+import '../../widgets/event_form_inputs.dart';
+import '../../widgets/form_field_container.dart';
 import 'choose_location.dart';
+import 'package:flutter_multi_selector/flutter_multi_selector.dart';
 
 class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key});
+  final EventService eventService;
+
+  const CreateEventPage({
+    super.key,
+    required this.eventService,
+  });
 
   @override
   State<CreateEventPage> createState() => _CreateEventPageState();
 }
 
 class _CreateEventPageState extends State<CreateEventPage> {
-  final TextEditingController _eventNameController = TextEditingController();
-  final TextEditingController _eventDescriptionController =
-      TextEditingController();
-  DateTime? startDate;
-  DateTime? endDate;
-  PickedData? location;
+  final _formKey = GlobalKey<FormState>();
 
+  final _eventNameController = TextEditingController();
+  final _eventDescriptionController = TextEditingController();
+
+  DateTime? _startDate;
+  DateTime? _endDate;
+  PickedData? _location;
+  int? _maxParticipants;
+
+  List<EventTag> _selectedTags = [];
+
+  String? _startDateError;
+  String? _endDateError;
+  String? _locationError;
+  String? _submitError;
+
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _eventNameController.dispose();
+    _eventDescriptionController.dispose();
+    super.dispose();
+  }
+
+  DateTime get _now => DateTime.now();
+
+  DateTime get _latestAllowedDate =>
+      _now.add(const Duration(days: 365));
+
+  String? _validateStartDate()
+  {
+    if (_startDate == null) {
+      return 'Select the start date and time';
+    } else if (!_startDate!.isAfter(_now)) {
+      return 'Start time must be in the future';
+    } else if (_startDate!.isAfter(_latestAllowedDate)) {
+      return 'Start time cannot be more than 365 days ahead';
+    }
+
+    return null;
+  }
+
+  String? _validateEndDate()
+  {
+    if (_endDate == null) {
+      return 'Select the end date and time';
+    } else if (_startDate != null &&
+        !_endDate!.isAfter(_startDate!)) {
+      return 'End time must be after start time';
+    } else if (_endDate!.isAfter(_latestAllowedDate)) {
+      return 'End time cannot be more than 365 days ahead';
+    }
+
+    return null;
+  }
+
+  String? _validateLocation()
+  {
+    if (_location == null) {
+      return 'Choose the event location on the map';
+    }
+
+    return null;
+  }
+
+  bool _validateNonTextFields() {
+    String? startError;
+    String? endError;
+    String? locationError;
+
+    startError = _validateStartDate();
+    endError = _validateEndDate();
+    locationError = _validateLocation();
+
+    setState(() {
+      _startDateError = startError;
+      _endDateError = endError;
+      _locationError = locationError;
+    });
+
+    return startError == null &&
+        endError == null &&
+        locationError == null;
+  }
+
+  Future<void> _chooseLocation() async {
+    final result = await Navigator.of(context).push<PickedData>(
+      MaterialPageRoute(
+        builder: (_) => ChooseLocationPage(),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _location = result;
+      _locationError = null;
+      _submitError = null;
+    });
+  }
+
+  Future<void> _chooseTags(List<EventTag> tags) async {
+    setState(() {
+      _selectedTags = tags;
+      _submitError = null;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+
+    FocusScope.of(context).unfocus();
+
+    final formIsValid = _formKey.currentState!.validate();
+    final otherFieldsAreValid = _validateNonTextFields();
+
+    if (!formIsValid || !otherFieldsAreValid) {
+      return;
+    }
+
+    final location = _location!;
+    final start = _startDate!;
+    final end = _endDate!;
+    final maxParticipants = _maxParticipants!;
+
+    // Перевір структуру PickedData у встановленій версії пакета.
+    // Зазвичай координати доступні через location.latLong.
+    final request = CreateEventRequest(
+      name: _eventNameController.text.trim(),
+      description: _eventDescriptionController.text.trim(),
+      startTime: start,
+      endTime: end,
+      address: location.address,
+      latitude: location.latLong.latitude,
+      longitude: location.latLong.longitude,
+      maxParticipants: maxParticipants,
+      tagIds: _selectedTags.map((tag) => tag.id).toList(),
+    );
+
+    setState(() {
+      _isSubmitting = true;
+      _submitError = null;
+    });
+
+    try {
+      await widget.eventService.createEvent(request);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Event created successfully'),
+        ),
+      );
+
+      Navigator.of(context).pop(true);
+    } on EventServiceException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _submitError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _submitError =
+        'Could not create the event. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Create new event")),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              AppFormInput(
-                inputHintText: "Enter name of the event",
-                maxLength: 50,
-                title: NecessaryInputTitle(title: "Event name"),
-                controller: _eventNameController,
-              ),
-              SizedBox(height: 5),
-              AppFormInput(
-                keyboardType: TextInputType.multiline,
-                inputHintText: "Enter description",
-                maxLength: 1000,
-                maxLines: 4,
-                title: NecessaryInputTitle(title: "Event description"),
-                controller: _eventDescriptionController,
-              ),
-              SizedBox(height: 5),
-              DateTimeInput(
-                onDateTimeChange: (DateTime date) {
-                  // ToDo: do something with date
-                },
-                title: NecessaryInputTitle(title: "Start time")
-              ),
-              SizedBox(height: 10,),
-              DateTimeInput(
-                onDateTimeChange: (DateTime date) {
-                  // ToDo: do something with date
-                },
-                title: NecessaryInputTitle(title: "End time",)
-              ),
-              SizedBox(height: 10,),
-              LocationInput(
-                title: NecessaryInputTitle(title: "Address"),
-                onTap: () async {
-                  final result = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChooseLocationPage()));
-                  setState(() {
-                    location = result;
-                  });
-                },
-                address: location?.address,
-              ),
-              SizedBox(height: 10,),
-              MaxParticipantsInput(
-                title: NecessaryInputTitle(title: "Max participants"),
-                onChanged: (int? value) {
-                  print(value);
-                },
-              ),
-              SizedBox(height: 10,),
-              TagInput(
-                title: Text("Tags", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),),
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChooseTagsPage()));
-                },
-              ),
-
-              SizedBox(height: 10,),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  child: const Text("Create"),
-                  style: ButtonStyle(
-                    shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(10))),
-                    padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 0, vertical: 20))
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class NecessaryInputTitle extends StatelessWidget {
-  final String title;
-  const NecessaryInputTitle({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
+      appBar: AppBar(
+        title: const Text('Create new event',
         style: TextStyle(
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-        children: [
-          TextSpan(text: title),
-          TextSpan(
-            style: TextStyle(color: Colors.red[400]),
-            text: " *",
+          fontSize: 26,
+        )),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FormFieldContainer(
+                  title: 'Event name',
+                  required: true,
+                  child: TextFormField(
+                    controller: _eventNameController,
+                    maxLength: 50,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter name of the event',
+                    ),
+                    validator: (value) {
+                      final name = value?.trim() ?? '';
+
+                      if (name.isEmpty) {
+                        return 'Enter event name';
+                      }
+
+                      if (name.length < 3) {
+                        return 'Name must contain at least 3 characters';
+                      }
+
+                      if (name.length > 50) {
+                        return 'Name cannot exceed 50 characters';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                FormFieldContainer(
+                  title: 'Event description',
+                  required: true,
+                  child: TextFormField(
+                    controller: _eventDescriptionController,
+                    maxLength: 1000,
+                    maxLines: 4,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Enter description',
+                      alignLabelWithHint: true,
+                    ),
+                    validator: (value) {
+                      final description = value?.trim() ?? '';
+
+                      if (description.isEmpty) {
+                        return 'Enter event description';
+                      }
+
+                      if (description.length > 1000) {
+                        return 'Description cannot exceed 1000 characters';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                DateTimeInput(
+                  title: 'Start time',
+                  required: true,
+                  value: _startDate,
+                  errorText: _startDateError,
+                  maxDate: _latestAllowedDate,
+                  onChanged: (date) {
+                    setState(() {
+                      _startDate = date;
+                      _startDateError = null;
+                      _endDateError = null;
+                      _submitError = null;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                DateTimeInput(
+                  title: 'End time',
+                  required: true,
+                  value: _endDate,
+                  errorText: _endDateError,
+                  minDate: _startDate,
+                  maxDate: _latestAllowedDate,
+                  onChanged: (date) {
+                    setState(() {
+                      _endDate = date;
+                      _endDateError = null;
+                      _submitError = null;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                FormFieldContainer(
+                  title: 'Address',
+                  required: true,
+                  errorText: _locationError,
+                  child: SelectableInput(
+                    icon: Icons.location_on_outlined,
+                    text: _location?.address ??
+                        'Choose location on map',
+                    onTap: _chooseLocation,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                FormFieldContainer(
+                  title: 'Max participants',
+                  required: true,
+                  child: TextFormField(
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.people_outline),
+                      hintText: 'Enter maximum participants',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _maxParticipants = int.tryParse(value);
+                        _submitError = null;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Enter maximum participants';
+                      }
+
+                      final number = int.tryParse(value);
+
+                      if (number == null || number < 1) {
+                        return 'Enter a valid positive integer';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                FormFieldContainer(
+                  title: 'Tags',
+                  child: MultiSelectorBottomSheetField<EventTag>(
+                    items: [],
+                    onConfirm: _chooseTags,
+                  )
+                ),
+                const SizedBox(height: 16),
+
+                if (_submitError != null) ...[
+                  Text(
+                    _submitError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : const Text('Create'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
-
-class _DateTimeInputState extends State<DateTimeInput> {
-  DateTime? _selectedDateTime;
-
-  DateTime _concatDateTimeWithTimeOfDay(DateTime date, TimeOfDay time) {
-    return date.add(Duration(hours: time.hour, minutes: time.minute));
-  }
-
-  Future<DateTime?> _selectDate() {
-    return showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-  }
-
-  Future<TimeOfDay?> _selectTime() {
-    return showTimePicker(context: context, initialTime: TimeOfDay.now());
-  }
-
-  String _convertDateTimeToString(DateTime dateTime) {
-    return "${dateTime.year}-${dateTime.month}-${dateTime.day} ${dateTime.hour}:${dateTime.minute}";
-  }
-
-  Future<void> _getDateTime() async {
-    DateTime? date = await _selectDate();
-    if (date == null) {
-      return;
-    }
-    TimeOfDay? time = await _selectTime();
-    if (time == null) {
-      return;
-    }
-    DateTime dateTime = _concatDateTimeWithTimeOfDay(date, time);
-    widget.onDateTimeChange(dateTime);
-
-    setState(() {
-      _selectedDateTime = dateTime;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        widget.title,
-        SizedBox(height: 5),
-        InkWell(
-            onTap: _getDateTime,
-          borderRadius: BorderRadius.circular(10),
-          child: InputDecorator(
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.calendar_month),
-              suffixIcon: Icon(Icons.chevron_right),
-            ),
-            child: Text(
-              _selectedDateTime == null ? "Select date" : _convertDateTimeToString(_selectedDateTime!),
-              style: TextStyle(
-              ),
-            ),
-          ),
-        )
-      ],
-    );
-  }
-}
-
-class DateTimeInput extends StatefulWidget {
-  final Widget title;
-  final Function(DateTime) onDateTimeChange;
-
-  const DateTimeInput({
-    super.key,
-    required this.title,
-    required this.onDateTimeChange,
-  });
-
-  @override
-  State<DateTimeInput> createState() => _DateTimeInputState();
-}
-
-class LocationInput extends StatelessWidget {
-  final String? address;
-  final VoidCallback onTap;
-  final Widget title;
-  const LocationInput({super.key, required this.onTap, this.address, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        title,
-        SizedBox(height: 5,),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: InputDecorator(
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.location_on_outlined),
-              suffixIcon: Icon(Icons.chevron_right),
-            ),
-            child: Text(
-              address ?? "Choose location on map",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class TagInput extends StatelessWidget {
-  final Widget title;
-  final VoidCallback onTap;
-  final items = [MultiSelectorItem<int>(1, "Option One")];
-  TagInput({super.key, required this.title, required this.onTap});
-
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        title,
-        SizedBox(height: 5,),
-        MultiSelectorBottomSheetField(items: items,
-        onConfirm: (items) {
-          print(items);
-        },)
-      ],
-    );
-  }
-}
-
-class MaxParticipantsInput extends StatelessWidget {
-  final int? maxParticipants;
-  final ValueChanged<int?> onChanged;
-  final Widget title;
-
-  const MaxParticipantsInput({
-    super.key,
-    required this.onChanged,
-    required this.title,
-    this.maxParticipants,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        title,
-        const SizedBox(height: 5),
-        TextFormField(
-          initialValue: maxParticipants?.toString(),
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.people_outline),
-            hintText: 'Enter maximum participants',
-          ),
-          onChanged: (value) {
-            final number = int.tryParse(value);
-            onChanged(number);
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Enter maximum participants';
-            }
-
-            final number = int.tryParse(value);
-
-            if (number == null || number < 1) {
-              return 'Enter a number greater than 0';
-            }
-
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-}
-
-

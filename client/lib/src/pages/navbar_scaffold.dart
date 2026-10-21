@@ -1,8 +1,3 @@
-import 'package:client/src/pages/Authorization/login.dart';
-import 'package:client/src/pages/chats.dart';
-import 'package:client/src/pages/events.dart';
-import 'package:client/src/pages/map.dart';
-import 'package:client/src/pages/Profile/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

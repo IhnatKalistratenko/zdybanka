@@ -1,4 +1,4 @@
-import 'package:client/config/route_config.dart';
+import 'package:client/src/config/route_config.dart';
 import 'package:flutter/material.dart';
 
 void main() {

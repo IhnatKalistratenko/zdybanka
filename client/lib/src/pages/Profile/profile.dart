@@ -1,5 +1,6 @@
 import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/pages/Profile/edit_profile.dart';
+import 'package:client/src/pages/events.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/event_card.dart';
@@ -135,10 +136,10 @@ class _EventsListState extends State<EventsList> {
         ),
       ),
       children: [
-        EventCard(trailing: EventArrowTrailing()),
-        EventCard(trailing: EventArrowTrailing()),
-        EventCard(trailing: EventArrowTrailing()),
-        EventCard(trailing: EventArrowTrailing()),
+        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
+        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
+        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
+        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
       ],
     );
   }
