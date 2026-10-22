@@ -1,4 +1,4 @@
-namespace Zdybanka.Application.Dto;
+namespace Zdybanka.Application.DTO.Tag;
 
 public record TagDto
 {

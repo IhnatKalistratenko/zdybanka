@@ -1,4 +1,4 @@
-using Zdybanka.Application.Dto;
+using Zdybanka.Application.DTO.Tag;
 using Zdybanka.Core;
 using Zdybanka.Data.Repositories;
 

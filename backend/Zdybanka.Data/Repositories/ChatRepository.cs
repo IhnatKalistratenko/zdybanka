@@ -13,9 +13,9 @@ public class ChatRepository(ZdybankaContext context) : IChatRepository
         return _context.Chats.ToListAsync();
     }
 
-    public Task<Chat> GetChatByIdAsync(Guid id)
+    public Task<Chat?> GetChatByIdAsync(Guid id)
     {
-        return _context.Chats.FirstAsync(ch => ch.Id == id);
+        return _context.Chats.FirstOrDefaultAsync(ch => ch.Id == id);
     }
 
     public Task<List<Chat>> GetUserChatsAsync(Guid userId)

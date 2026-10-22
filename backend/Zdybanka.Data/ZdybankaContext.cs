@@ -39,7 +39,7 @@ public partial class ZdybankaContext : DbContext
 
         modelBuilder.HasDbFunction(() => GetEventsByDistance(default, default)).HasName("nearby_events");
         modelBuilder.HasDbFunction(() => GetEventsInBorders(default, default, default, default)).HasName("events_in_borders");
-
+        
         modelBuilder.Entity<Chat>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("chats_pkey");
@@ -54,6 +54,9 @@ public partial class ZdybankaContext : DbContext
             entity.Property(e => e.Description)
                 .HasDefaultValueSql("''::text")
                 .HasColumnName("description");
+            entity.Property(e => e.Status)
+                .HasDefaultValueSql("'active'::chat_status")
+                .HasColumnName("status");
             entity.Property(e => e.EventId).HasColumnName("event_id");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
@@ -92,15 +95,14 @@ public partial class ZdybankaContext : DbContext
             entity.Property(e => e.CreatorId).HasColumnName("creator_id");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.EndTime).HasColumnName("end_time");
-            entity.Property(e => e.MapIconUrl)
-                .HasMaxLength(255)
-                .HasDefaultValueSql("NULL::character varying")
-                .HasColumnName("map_icon_url");
             entity.Property(e => e.MaxParticipants).HasColumnName("max_participants");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");
             entity.Property(e => e.StartTime).HasColumnName("start_time");
+            entity.Property(e => e.Status)
+                .HasColumnName("event_status")
+                .HasDefaultValueSql("'active'::event_status");
 
             entity.HasOne(d => d.Creator).WithMany(p => p.Events)
                 .HasForeignKey(d => d.CreatorId)
@@ -145,22 +147,12 @@ public partial class ZdybankaContext : DbContext
             entity.HasKey(e => e.Id).HasName("users_pkey");
 
             entity.ToTable("users");
-
-            entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
-
+            
             entity.HasIndex(e => e.Username, "users_username_key").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .HasColumnName("id");
-            entity.Property(e => e.AvatarUrl)
-                .HasMaxLength(255)
-                .HasDefaultValueSql("NULL::character varying")
-                .HasColumnName("avatar_url");
-            entity.Property(e => e.Email)
-                .HasMaxLength(255)
-                .HasDefaultValueSql("NULL::character varying")
-                .HasColumnName("email");
             entity.Property(e => e.PasswordHash)
                 .HasMaxLength(255)
                 .HasColumnName("password_hash");
