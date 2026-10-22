@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Zdybanka.Core;
+﻿namespace Zdybanka.Core;
 
 public partial class UserChat
 {

@@ -1,6 +1,8 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Zdybanka.Core;
+using Zdybanka.Core.StorageInterfaces;
 
 namespace Zdybanka.Data.Repositories;
 
@@ -13,9 +15,9 @@ public class TagRepository(ZdybankaContext context) : ITagRepository
         return _context.Tags.ToListAsync();
     }
 
-    public Task<Tag> GetTagByIdAsync(Guid id)
+    public Task<Tag?> GetTagByIdAsync(Guid id)
     {
-        return _context.Tags.FirstAsync(t => t.Id == id);
+        return _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
     }
 
     public async Task<Tag> AddTagAsync(Tag tag)
@@ -35,9 +37,16 @@ public class TagRepository(ZdybankaContext context) : ITagRepository
         return _context.Tags.Update(tag).Entity;
     }
 
+    public Task<Tag?> FindTagAsync(Expression<Func<Tag, bool>> predicate)
+    {
+        return _context.Tags.FirstOrDefaultAsync(predicate);
+    }
+
     public Task<int> SaveChangesAsync()
     {
         return _context.SaveChangesAsync();
     }
+    
+    
 
 }

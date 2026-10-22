@@ -18,7 +18,7 @@ public class DeleteUserTests : UserTest
         
         // Act
         var user = await userTask;
-        await _service.RemoveUser(user.Id);
+        await Service.RemoveUserAsync(user.Id);
         
         // Assert
         var userCountAfter = _context.Users.CountAsync(u => u.Username == ZdybankaContextFactory.Username1);
@@ -34,6 +34,6 @@ public class DeleteUserTests : UserTest
         
         // Act
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(async () => await _service.RemoveUser(wrongId));
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () => await Service.RemoveUserAsync(wrongId));
     }
 }

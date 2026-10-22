@@ -1,4 +1,5 @@
 using NetTopologySuite.Geometries;
+using Zdybanka.Application.DTO.Tag;
 
 namespace Zdybanka.Application.DTO.Event;
 
@@ -13,4 +14,5 @@ public record CreateEventDto
     public DateTime EndTime { get; set; }
     public int MaxParticipants { get; set; }
     public required Point Coordinates { get; set; }
+    public List<TagResponse> Tags { get; set; } = new List<TagResponse>();
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Zdybanka.Core;
+using Zdybanka.Core.StorageInterfaces;
 
 namespace Zdybanka.Data.Repositories;
 
@@ -23,19 +24,19 @@ public class ChatRepository(ZdybankaContext context) : IChatRepository
         return _context.UserChats.Where(ch => ch.UserId == userId).Select(userChat => userChat.Chat).ToListAsync();
     }
 
-    public ValueTask<EntityEntry<Chat>> AddChatAsync(Chat chat)
+    public async Task<Chat> AddChatAsync(Chat chat)
     {
-        return _context.Chats.AddAsync(chat);
+        return (await _context.Chats.AddAsync(chat)).Entity;
     }
 
-    public EntityEntry<Chat> RemoveChat(Chat chat)
+    public void RemoveChat(Chat chat)
     {
-        return _context.Chats.Remove(chat);
+        _context.Chats.Remove(chat);
     }
 
-    public EntityEntry<Chat> UpdateChat(Chat chat)
+    public Chat UpdateChat(Chat chat)
     {
-        return _context.Chats.Update(chat);
+        return _context.Chats.Update(chat).Entity;
     }
 
     public Task<int> SaveChangesAsync()

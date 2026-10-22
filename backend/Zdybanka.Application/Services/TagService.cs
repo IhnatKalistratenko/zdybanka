@@ -1,6 +1,6 @@
 using Zdybanka.Application.DTO.Tag;
 using Zdybanka.Core;
-using Zdybanka.Data.Repositories;
+using Zdybanka.Core.StorageInterfaces;
 
 namespace Zdybanka.Application.Services;
 
@@ -13,49 +13,89 @@ public class TagService
         _repository = repository;
     }
 
-    public Task<Tag> GetTagByIdAsync(Guid id)
+    public async Task<TagResponse> GetTagByIdAsync(Guid id)
     {
-        return _repository.GetTagByIdAsync(id);
+        Tag? dbTag = await _repository.GetTagByIdAsync(id);
+        if (dbTag == null)
+        {
+            throw new KeyNotFoundException("Tag not found");
+        }
+        
+        return new TagResponse()
+        {
+            Id = dbTag.Id,
+            Name = dbTag.Name
+        };
     }
 
-    public Task<List<Tag>> GetTagsAsync()
+    public async Task<List<TagResponse>> GetTagsAsync()
     {
-        return _repository.GetTagsAsync();
+        List<Tag> tags =  await _repository.GetTagsAsync();
+        return tags.Select(t => new TagResponse()
+        {
+            Id = t.Id,
+            Name = t.Name
+        }).ToList();
     }
 
-    public async Task<TagDto> AddTagAsync(TagDto tagDto)
+    public async Task<TagResponse> AddTagAsync(string name)
     {
+        if ((await _repository.FindTagAsync(t => t.Name == name)) != null)
+        {
+            throw new ArgumentException($"Tag \"{name}\" already exists");
+        }
+        
         Tag tag = new Tag()
         {
-            Name = tagDto.Name
+            Name = name
         };
 
         tag = await _repository.AddTagAsync(tag);
 
         await _repository.SaveChangesAsync();
 
-        return new TagDto()
+        return new TagResponse()
         {
             Id = tag.Id,
             Name = tag.Name
         };
     }
 
-    public async void RemoveTag(Guid id)
+    public async Task RemoveTag(Guid id)
     {
-        Tag tag = await _repository.GetTagByIdAsync(id);
+        Tag? tag = await _repository.GetTagByIdAsync(id);
+        if (tag == null)
+        {
+            throw new KeyNotFoundException("Tag not found");
+        }
+        
         _repository.RemoveTag(tag);
         await _repository.SaveChangesAsync();
     }
 
-    public async void UpdateTag(TagDto dto)
+    public async Task<TagResponse> UpdateTag(Guid id, string newName)
     {
-        Tag tag = await _repository.GetTagByIdAsync(dto.Id);
+        Tag? tag = await _repository.GetTagByIdAsync(id);
+        if (tag == null)
+        {
+            throw new KeyNotFoundException("Tag not found");
+        }
 
-        tag.Name = dto.Name;
+        if (await _repository.FindTagAsync(t => t.Name == newName) != null)
+        {
+            throw new ArgumentException($"Tag with name {newName} already exists");
+        }
+
+        tag.Name = newName;
 
         _repository.UpdateTag(tag);
 
         await _repository.SaveChangesAsync();
+
+        return new TagResponse()
+        {
+            Id = tag.Id,
+            Name = tag.Name
+        };
     }
 }

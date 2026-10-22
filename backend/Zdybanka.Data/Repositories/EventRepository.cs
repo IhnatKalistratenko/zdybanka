@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Zdybanka.Core;
 using Zdybanka.Core.Filters;
+using Zdybanka.Core.StorageInterfaces;
 using Zdybanka.Data.DTO;
 
 namespace Zdybanka.Data.Repositories;
@@ -14,14 +15,14 @@ public class EventRepository : IEventRepository
         _context = context;
     }
 
-    public ValueTask<EntityEntry<Event>> AddEventAsync(Event @event)
+    public async Task<Event> AddEventAsync(Event @event)
     {
-        return _context.Events.AddAsync(@event);
+        return (await _context.Events.AddAsync(@event)).Entity;
     }
 
-    public Task<Event> GetEventByIdAsync(Guid id)
+    public Task<Event?> GetEventByIdAsync(Guid id)
     {
-        return _context.Events.FirstAsync(e => e.Id == id);
+        return _context.Events.FirstOrDefaultAsync(e => e.Id == id);
     }
 
     private IQueryable<Event> ApplyEventFilters(IQueryable<Event> query, EventFilter filter)
@@ -76,9 +77,9 @@ public class EventRepository : IEventRepository
         return _context.GetEventsInBorders(minLatitude, minLongtitude, maxLatitude, maxLongtitude);
     }
 
-    public EntityEntry<Event> RemoveEvent(Event @event)
+    public void RemoveEvent(Event @event)
     {
-        return _context.Events.Remove(@event);
+        _context.Events.Remove(@event);
     }
 
     public Task<int> SaveChangesAsync()
@@ -86,8 +87,8 @@ public class EventRepository : IEventRepository
         return _context.SaveChangesAsync();
     }
 
-    public EntityEntry<Event> UpdateEvent(Event @event)
+    public Event UpdateEvent(Event @event)
     {
-        return _context.Events.Update(@event);
+        return _context.Events.Update(@event).Entity;
     }
 }
