@@ -75,6 +75,7 @@ final mockEvents = <Event>[
 ];
 
 class EventsPage extends StatefulWidget {
+  static final String pageRoute = "/events";
   const EventsPage({super.key});
 
   @override

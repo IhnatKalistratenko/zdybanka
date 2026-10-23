@@ -12,3 +12,20 @@ Accept: application/json
 
 GET {{API_HostAddress}}/api/User
 Accept: application/json
+
+###
+
+POST {{API_HostAddress}}/api/Auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "testUser",
+  "password": "test"
+}
+
+###
+
+GET {{API_HostAddress}}/api/User/me
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImU4MDhjZjBhLWE5OWEtNDMwOS04ZjNhLTVlMGFmYTNmMWM4OSIsIm5iZiI6MTc5Mjc3MzE2NCwiZXhwIjoxNzkyNzc2NzY0LCJpc3MiOiJ6ZHliYW5rYS1hcGkifQ.KgPEz_F31X-JxzyGk4o0Xq3zByRGXmCPu6Xtu9xzVVg

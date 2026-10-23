@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Zdybanka.Application.DTO.User;
 using Zdybanka.Core;
 using Zdybanka.Core.StorageInterfaces;
@@ -60,6 +61,22 @@ public class UserService(IUserRepository repository, IPasswordHasher hasher)
         };
     }
 
+    public async Task<UserResponse> GetUser(Expression<Func<User,bool>> predicate)
+    {
+        User? user = await _repository.FindUser(predicate);
+        
+        if (user == null)
+        {
+            throw new KeyNotFoundException();
+        }
+
+        return new UserResponse()
+        {
+            Id = user.Id,
+            Username =  user.Username,
+        };
+    }
+
     public async Task RemoveUserAsync(Guid id)
     {
         User? user = await _repository.GetUserByIdAsync(id);
@@ -84,11 +101,6 @@ public class UserService(IUserRepository repository, IPasswordHasher hasher)
         if (await _repository.FindUser(u => u.Username == request.Username) != null)
         {
             throw new ArgumentException("Username already exists");
-        }
-
-        if (!_hasher.VerifyPassword(request.ConfirmPassword, user.PasswordHash))
-        {
-            throw new UnauthorizedAccessException("Wrong password");
         }
 
         if (request.Username != null)

@@ -1,20 +1,20 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zdybanka.Application.DTO;
 using Zdybanka.Application.DTO.User;
 using Zdybanka.Application.Services;
+using Zdybanka.Infrastructure.TokenValidation;
 
 namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController : Controller
+public class UserController(UserService userService, ITokenController tokenController) : Controller
 {
-    private readonly UserService _userService;
-
-    public UserController(UserService userService)
-    {
-        _userService = userService;
-    }
+    private readonly UserService _userService = userService;
+    private readonly ITokenController _tokenController = tokenController;
 
     [HttpGet("")]
     public async Task<IActionResult> GetUsers()
@@ -98,6 +98,14 @@ public class UserController : Controller
         {
             return Forbid();
         }
+        catch (Exception e)
+        {
+            return StatusCode(500, new ErrorResponse()
+            {
+                Code = ErrorCodes.ServerError,
+                Error = "Failed to update user. Please try again.",
+            });
+        }
     }
 
     [HttpDelete("{id}")]
@@ -116,5 +124,20 @@ public class UserController : Controller
                 Error = e.Message
             });
         }
+    }
+    
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetUserInformation([FromHeader] string authorization)
+    {
+        string? idString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idString, out Guid id))
+        {
+            return Unauthorized();
+        }
+
+        UserResponse user = await _userService.GetUserById(id);
+
+        return Ok(user);
     }
 }

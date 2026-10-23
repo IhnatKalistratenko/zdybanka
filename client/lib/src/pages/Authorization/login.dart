@@ -1,4 +1,8 @@
+import 'package:client/src/models/login_request.dart';
 import 'package:client/src/pages/Authorization/register.dart';
+import 'package:client/src/pages/events.dart';
+import 'package:client/src/services/auth_service.dart';
+import 'package:client/src/widgets/error_card.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -36,11 +40,48 @@ class _LoginFormState extends State<LoginForm> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
+  ErrorCardContent? authError;
+  bool _isSubmitting = false;
+
   @override
   void dispose() {
     usernameController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  void login() async
+  {
+    if(!_formKey.currentState!.validate())
+      {
+        return;
+      }
+
+    setState(() {
+      authError = null;
+      _isSubmitting = true;
+    });
+
+    LoginRequest request = LoginRequest(username: usernameController.text, password: passwordController.text);
+
+    try {
+      await AuthService().login(request);
+
+      if (!mounted) return;
+
+      GoRouter.of(context).go(EventsPage.pageRoute);
+    } catch(e) {
+      if (!mounted) return;
+      setState(() {
+        authError = ErrorCardContent(type: "Authorization failed", message: e is AuthServiceException ? e.message : "Failed to perform login. Please try again.");
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -78,6 +119,9 @@ class _LoginFormState extends State<LoginForm> {
           const SizedBox(height: 5),
           TextFormField(
             controller: passwordController,
+            obscureText: true,
+            autocorrect: false,
+            enableSuggestions: false,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return "Please enter your password";
@@ -94,19 +138,21 @@ class _LoginFormState extends State<LoginForm> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if(authError != null) ErrorCard(error: authError!),
                 ElevatedButton(
-                  onPressed: () {
-                    if (!_formKey.currentState!.validate()) {
-                      return;
-                    }
-
-                    // TODO: Sending data to server
-                  },
+                  onPressed: _isSubmitting ? null : login,
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
                     textStyle: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  child: const Text("Sign in"),
+                  child: _isSubmitting ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ) :
+                  const Text("Sign in"),
                 ),
 
                 const SizedBox(height: 16),
