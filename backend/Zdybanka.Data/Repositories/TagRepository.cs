@@ -20,6 +20,11 @@ public class TagRepository(ZdybankaContext context) : ITagRepository
         return _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
     }
 
+    public Task<List<Tag>> GetTagsByIdsAsync(IReadOnlyCollection<Guid> ids)
+    {
+        return _context.Tags.Where(tag => ids.Contains(tag.Id)).ToListAsync();
+    }
+
     public async Task<Tag> AddTagAsync(Tag tag)
     {
         EntityEntry<Tag> entry = await _context.Tags.AddAsync(tag);

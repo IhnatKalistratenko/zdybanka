@@ -1,5 +1,8 @@
 
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Zdybanka.Application.Services;
 using Zdybanka.Core;
@@ -7,6 +10,8 @@ using Zdybanka.Core.StorageInterfaces;
 using Zdybanka.Data;
 using Zdybanka.Data.Repositories;
 using Zdybanka.Infrastructure.PasswordHasher;
+using Zdybanka.Infrastructure.TokenValidation;
+using Zdybanka.API.Policies;
 
 namespace Zdybanka.API;
 
@@ -32,16 +37,42 @@ public class Program
         builder.Services.AddScoped<TagService>();
         builder.Services.AddScoped<ChatService>();
         builder.Services.AddScoped<EventService>();
+        builder.Services.AddScoped<AuthService>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ITagRepository, TagRepository>();
         builder.Services.AddScoped<IChatRepository, ChatRepository>();
         builder.Services.AddScoped<IEventRepository, EventRepository>();
+        builder.Services.AddScoped<ITokenController, JwtTokenController>();
 
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
             {
                 policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+            });
+        });
+
+        builder.Services.AddAuthentication().AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuer = true,
+                ValidateAudience = false,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = true,
+                ValidIssuer = "zdybanka-api",
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes("your_super_secret_key_with_at_least_256_bits_for_security"))
+            };
+        });
+        builder.Services.AddSingleton<IAuthorizationHandler, OwnershipHandler>();
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("Ownership", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.AddRequirements(new OwnershipRequirement());
             });
         });
 
@@ -62,6 +93,7 @@ public class Program
         
         app.UseCors();
 
+        app.UseAuthentication();
         app.UseAuthorization();
         
         app.MapControllers();

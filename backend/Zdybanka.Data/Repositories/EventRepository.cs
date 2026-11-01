@@ -47,9 +47,9 @@ public class EventRepository : IEventRepository
             query = query.Where(e => e.EndTime <= filter.EndTo);
         }
 
-        if (filter.UserLocation != null)
+        if (filter.ToPoint() != null)
         {
-            query = query.Where(e => e.Coordinates.IsWithinDistance(filter.UserLocation, filter.Radius));
+            query = query.Where(e => e.Coordinates.IsWithinDistance(filter.ToPoint(), filter.Radius));
         }
         
         return query.Skip((filter.Page - 1) * filter.PageSize).Take(filter.PageSize);

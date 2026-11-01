@@ -1,11 +1,14 @@
-import 'package:flutter/gestures.dart';
+
+import 'package:client/src/models/register_request.dart';
+import 'package:client/src/services/auth_service.dart';
+import 'package:client/src/widgets/error_card.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'login.dart';
 
 class RegisterPage extends StatelessWidget {
-  static final String pageRoute = "/register";
+  static const String pageRoute = "/register";
 
   const RegisterPage({super.key});
 
@@ -14,16 +17,14 @@ class RegisterPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-            padding: EdgeInsets.all(16),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 480,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: RegisterForm(),
-              ),
-            )
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: const SizedBox(
+              width: double.infinity,
+              child: RegisterForm(),
+            ),
+          ),
         ),
       ),
     );
@@ -42,12 +43,55 @@ class _RegisterFormState extends State<RegisterForm> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
+  ErrorCardContent? registerError;
+  bool _isSubmitting = false;
+
   @override
-  void dispose()
-  {
+  void dispose() {
     usernameController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> register() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      registerError = null;
+      _isSubmitting = true;
+    });
+
+    final request = RegisterRequest(
+      username: usernameController.text,
+      password: passwordController.text,
+    );
+
+    try {
+      await AuthService().register(request);
+
+      if (!mounted) return;
+
+      context.go(LoginPage.pageRoute);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        registerError = ErrorCardContent(
+          type: "Registration failed",
+          message: e is AuthServiceException
+              ? e.message
+              : "Failed to perform registration. Please try again.",
+        );
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -58,98 +102,99 @@ class _RegisterFormState extends State<RegisterForm> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: const Text("Register",
+          const Center(
+            child: Text(
+              "Register",
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 40
-              ),),
+                fontWeight: FontWeight.bold,
+                fontSize: 40,
+              ),
+            ),
           ),
-          const SizedBox(height: 30,),
+          const SizedBox(height: 30),
           const Text("Username:"),
-          const SizedBox(height: 5,),
+          const SizedBox(height: 5),
           TextFormField(
             controller: usernameController,
+            autocorrect: false,
             validator: (value) {
-              if(value == null || value.isEmpty)
-              {
+              if (value == null || value.trim().isEmpty) {
                 return "Please enter your username";
               }
               return null;
             },
-            decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter your username"
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: "Enter your username",
             ),
           ),
-          const SizedBox(height: 30,),
+          const SizedBox(height: 30),
           const Text("Password:"),
-          const SizedBox(height: 5,),
+          const SizedBox(height: 5),
           TextFormField(
             controller: passwordController,
+            obscureText: true,
+            enableSuggestions: false,
+            autocorrect: false,
             validator: (value) {
-              if(value == null || value.isEmpty)
-              {
+              if (value == null || value.isEmpty) {
                 return "Please enter your password";
               }
               return null;
             },
-            decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter your password"
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: "Enter your password",
             ),
           ),
-          const SizedBox(height: 20,),
+          const SizedBox(height: 20),
           Center(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                if (registerError != null) ...[
+                  ErrorCard(error: registerError!),
+                  const SizedBox(height: 12),
+                ],
                 ElevatedButton(
-                    onPressed: () {
-                      if(!_formKey.currentState!.validate())
-                      {
-                        return;
-                      }
-                      // ToDo: Sending data to server
-
-                    },
-                    style: ButtonStyle(
-                        fixedSize: WidgetStateProperty<Size>.fromMap(<WidgetStatesConstraint, Size> {
-                          WidgetState.any: Size(100, 50)
-                        }),
-                        textStyle: WidgetStateProperty.fromMap(<WidgetStatesConstraint, TextStyle> {
-                          WidgetState.any: TextStyle(
-                              fontWeight: FontWeight.bold
-                          )
-                        })
+                  onPressed: _isSubmitting ? null : register,
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(200, 50),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Text("Sign up")),
-                SizedBox(height: 16),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    children:
-                      [
-                        TextSpan(
-                          text: "Or if you are already with us you may "
-                        ),
-                        TextSpan(
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.underline
-                          ),
-                          text: "log in",
-                          recognizer: TapGestureRecognizer()..onTap = () {context.go(LoginPage.pageRoute);}
-                        )
-                      ]
                   ),
-                )
+                  child: _isSubmitting
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Text("Sign up"),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text(
+                      "Or if you are already with us you may ",
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.go(LoginPage.pageRoute);
+                      },
+                      child: const Text("log in"),
+                    ),
+                  ],
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 }
-

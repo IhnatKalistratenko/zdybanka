@@ -14,7 +14,8 @@ public record EventResponse
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; } 
     public int MaxParticipants { get; set; }
-    public Point Coordinates { get; set; } = null!;
+    public double Latitude { get; set; }
+    public double Longtitude { get; set; }
 
     public EventResponse(Core.Event domainEvent)
     {
@@ -28,6 +29,7 @@ public record EventResponse
         StartTime = domainEvent.StartTime;
         EndTime = domainEvent.EndTime;
         MaxParticipants = domainEvent.MaxParticipants;
-        Coordinates = domainEvent.Coordinates;
+        Latitude = domainEvent.Coordinates.Y;
+        Longtitude = domainEvent.Coordinates.X;
     }
 }

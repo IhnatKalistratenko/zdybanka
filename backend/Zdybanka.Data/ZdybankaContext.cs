@@ -101,7 +101,7 @@ public partial class ZdybankaContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.StartTime).HasColumnName("start_time");
             entity.Property(e => e.Status)
-                .HasColumnName("event_status")
+                .HasColumnName("status")
                 .HasDefaultValueSql("'active'::event_status");
 
             entity.HasOne(d => d.Creator).WithMany(p => p.Events)

@@ -1,14 +1,12 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:client/src/config/http_config.dart';
 
 Future<List> getTags() async
 {
   try
   {
-    var url = Uri.http("localhost:5071", "/api/Tag");
-
-    var response = await http.get(url);
+    var response = await httpClient.get(Uri.parse(ApiRoutes.tagsRoute));
 
     final body = json.decode(response.body);
 

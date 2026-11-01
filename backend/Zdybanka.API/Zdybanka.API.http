@@ -1,14 +1,159 @@
 @API_HostAddress = http://localhost:5071
+@UserId = 00000000-0000-0000-0000-000000000001
+@TagId = 00000000-0000-0000-0000-000000000002
+@ChatId = 00000000-0000-0000-0000-000000000003
+@EventId = 00000000-0000-0000-0000-000000000004
+@BearerToken = replace-with-token-from-login
 
-GET {{API_HostAddress}}/api/Tag
-Accept: application/json
-
-###
-
+### Health
 GET {{API_HostAddress}}/api/Telemetry/health
 Accept: application/json
 
-###
+### Login
+POST {{API_HostAddress}}/api/Auth/login
+Accept: application/json
+Content-Type: application/json
 
+{
+  "username": "testUser",
+  "password": "test"
+}
+
+### List users
 GET {{API_HostAddress}}/api/User
 Accept: application/json
+
+### Get user by ID
+GET {{API_HostAddress}}/api/User/{{UserId}}
+Accept: application/json
+
+### Create user
+POST {{API_HostAddress}}/api/User
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "testUser",
+  "password": "test"
+}
+
+### Update user (requires bearer token)
+PATCH {{API_HostAddress}}/api/User/{{UserId}}
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+Content-Type: application/json
+
+{
+  "username": "updatedUser",
+  "confirmPassword": "test",
+  "newPassword": "new-test-password"
+}
+
+### Delete user
+DELETE {{API_HostAddress}}/api/User/{{UserId}}
+Accept: application/json
+
+### Get current user (requires bearer token)
+GET {{API_HostAddress}}/api/User/me
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+
+### List chats
+GET {{API_HostAddress}}/api/Chat
+Accept: application/json
+
+### Get chat by ID
+GET {{API_HostAddress}}/api/Chat/{{ChatId}}
+Accept: application/json
+
+### Update chat
+POST {{API_HostAddress}}/api/Chat/{{ChatId}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Updated chat",
+  "description": "Updated description",
+  "status": "active"
+}
+
+### Delete chat
+DELETE {{API_HostAddress}}/api/Chat/{{ChatId}}
+Accept: application/json
+
+### List tags
+GET {{API_HostAddress}}/api/Tag
+Accept: application/json
+
+### Get tag by ID
+GET {{API_HostAddress}}/api/Tag/{{TagId}}
+Accept: application/json
+
+### Create tag (name is a query parameter)
+POST {{API_HostAddress}}/api/Tag?name=sample-tag
+Accept: application/json
+
+### Update tag (name is a JSON string body)
+PUT {{API_HostAddress}}/api/Tag/{{TagId}}
+Accept: application/json
+Content-Type: application/json
+
+"updated-tag"
+
+### Delete tag
+DELETE {{API_HostAddress}}/api/Tag/{{TagId}}
+Accept: application/json
+
+### List events (requires bearer token; filters are optional)
+GET {{API_HostAddress}}/api/Event?page=1&pageSize=20&status=Active
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+
+### Get event by ID (requires bearer token)
+GET {{API_HostAddress}}/api/Event/{{EventId}}
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+
+### Create event (requires bearer token)
+POST {{API_HostAddress}}/api/Event
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Sample event",
+  "description": "Event created from the HTTP scratch file",
+  "address": "Kyiv",
+  "startTime": "2027-01-15T10:00:00Z",
+  "endTime": "2027-01-15T12:00:00Z",
+  "maxParticipants": 20,
+  "latitude": 50.4501,
+  "longitude": 30.5234,
+  "tagIds": []
+}
+
+### Update event (requires bearer token; must own the event)
+PUT {{API_HostAddress}}/api/Event/{{EventId}}
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated sample event",
+  "description": "Updated description",
+  "address": "Kyiv",
+  "status": "Active",
+  "startTime": "2027-01-15T10:00:00Z",
+  "endTime": "2027-01-15T12:00:00Z",
+  "maxParticipants": 25,
+  "coordinates": {
+    "type": "Point",
+    "coordinates": [30.5234, 50.4501],
+    "srid": 4326
+  }
+}
+
+### Delete event (requires bearer token; must own the event)
+DELETE {{API_HostAddress}}/api/Event/{{EventId}}
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
