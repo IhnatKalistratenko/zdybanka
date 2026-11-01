@@ -67,7 +67,8 @@ public class UserController(UserService userService, ITokenController tokenContr
             return StatusCode(500);
         }
     }
-
+    
+    [Authorize]
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest dto)
     {

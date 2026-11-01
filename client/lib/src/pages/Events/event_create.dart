@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
 import '../../models/create_event_request.dart';
 import '../../models/event_tag.dart';
 import '../../services/event_service.dart';
+import '../../services/tag_service.dart';
 import '../../widgets/event_form_inputs.dart';
 import '../../widgets/form_field_container.dart';
+import '../Profile/profile.dart';
 import 'choose_location.dart';
 import 'package:flutter_multi_selector/flutter_multi_selector.dart';
 
 class CreateEventPage extends StatefulWidget {
-  final EventService eventService;
 
   const CreateEventPage({
     super.key,
-    required this.eventService,
   });
 
   @override
@@ -22,7 +23,10 @@ class CreateEventPage extends StatefulWidget {
 }
 
 class _CreateEventPageState extends State<CreateEventPage> {
+  final _tagService = TagService();
   final _formKey = GlobalKey<FormState>();
+
+  final _eventService = EventService();
 
   final _eventNameController = TextEditingController();
   final _eventDescriptionController = TextEditingController();
@@ -33,6 +37,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
   int? _maxParticipants;
 
   List<EventTag> _selectedTags = [];
+  List<EventTag> _availableTags = [];
+  bool _isLoadingTags = true;
+  String? _tagsError;
 
   String? _startDateError;
   String? _endDateError;
@@ -40,6 +47,36 @@ class _CreateEventPageState extends State<CreateEventPage> {
   String? _submitError;
 
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    try {
+      final tags = await _tagService.getTags();
+      if (!mounted) return;
+      setState(() {
+        _availableTags = tags;
+        _tagsError = null;
+        _isLoadingTags = false;
+      });
+    } on TagServiceException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _tagsError = error.message;
+        _isLoadingTags = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _tagsError = 'Could not load tags. Please try again.';
+        _isLoadingTags = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -149,8 +186,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final end = _endDate!;
     final maxParticipants = _maxParticipants!;
 
-    // Перевір структуру PickedData у встановленій версії пакета.
-    // Зазвичай координати доступні через location.latLong.
     final request = CreateEventRequest(
       name: _eventNameController.text.trim(),
       description: _eventDescriptionController.text.trim(),
@@ -169,24 +204,24 @@ class _CreateEventPageState extends State<CreateEventPage> {
     });
 
     try {
-      await widget.eventService.createEvent(request);
+      await _eventService.createEvent(request);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Event created successfully'),
-        ),
+        const SnackBar(content: Text('Event created successfully')),
       );
-
-      Navigator.of(context).pop(true);
+      context.go(ProfilePage.pageRoute);
     } on EventServiceException catch (error) {
       if (!mounted) return;
 
       setState(() {
-        _submitError = error.message;
+        _submitError = error.message.trim().isNotEmpty
+            ? error.message.trim()
+            : 'Could not create the event. Please try again.';
       });
-    } catch (_) {
+    } catch (e) {
+      print(e);
       if (!mounted) return;
 
       setState(() {
@@ -369,10 +404,22 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 FormFieldContainer(
                   title: 'Tags',
                   child: MultiSelectorBottomSheetField<EventTag>(
-                    items: [],
+                    items: _availableTags
+                        .map((tag) => MultiSelectorItem<EventTag>(tag, tag.name))
+                        .toList(),
                     onConfirm: _chooseTags,
                   )
                 ),
+                if (_isLoadingTags) ...[
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(),
+                ] else if (_tagsError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _tagsError!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 if (_submitError != null) ...[

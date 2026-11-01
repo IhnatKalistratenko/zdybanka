@@ -20,6 +20,8 @@ public class ChatService(IChatRepository repository)
         
         await _repository.AddChatAsync(newChat);
 
+        await _repository.SaveChangesAsync();
+
         return new ChatResponse(newChat);
     }
 

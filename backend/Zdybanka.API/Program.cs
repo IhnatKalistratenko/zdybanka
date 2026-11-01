@@ -1,5 +1,6 @@
 
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -10,6 +11,7 @@ using Zdybanka.Data;
 using Zdybanka.Data.Repositories;
 using Zdybanka.Infrastructure.PasswordHasher;
 using Zdybanka.Infrastructure.TokenValidation;
+using Zdybanka.API.Policies;
 
 namespace Zdybanka.API;
 
@@ -64,7 +66,15 @@ public class Program
                         Encoding.UTF8.GetBytes("your_super_secret_key_with_at_least_256_bits_for_security"))
             };
         });
-        builder.Services.AddAuthorization();
+        builder.Services.AddSingleton<IAuthorizationHandler, OwnershipHandler>();
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("Ownership", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.AddRequirements(new OwnershipRequirement());
+            });
+        });
 
         builder.Services.AddControllers();
         

@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Zdybanka.Application.DTO;
 using Zdybanka.Application.DTO.Event;
 using Zdybanka.Application.Services;
 using Zdybanka.Core.Filters;
@@ -7,10 +10,12 @@ namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/{controller}")]
-public class EventController(EventService eventService) : Controller
+public class EventController(EventService eventService, IAuthorizationService authorizationService) : Controller
 {
     private readonly EventService _eventService = eventService;
-
+    private readonly IAuthorizationService _authorizationService = authorizationService;
+    
+    [Authorize]
     [HttpGet("")]
     public async Task<IActionResult> GetEvents([FromQuery] EventFilter filter)
     {
@@ -25,7 +30,8 @@ public class EventController(EventService eventService) : Controller
             return StatusCode(500);
         }
     }
-
+    
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEvent([FromRoute] Guid id)
     {
@@ -41,11 +47,21 @@ public class EventController(EventService eventService) : Controller
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto)
+    [Authorize]
+    [HttpPost("")]
+    public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto, [FromHeader] string authorization)
     {
         try
         {
+            string? userId = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!Guid.TryParse(userId, out Guid id))
+            {
+                return Unauthorized();
+            }
+
+            dto.CreatorId = id;
+            
             EventResponse response = await _eventService.CreateEvent(dto);
             return CreatedAtAction(nameof(GetEvent), new { id = response.Id }, response);
         }
@@ -56,10 +72,19 @@ public class EventController(EventService eventService) : Controller
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> UpdateEvent([FromRoute] Guid id, [FromBody] UpdateEventDto dto)
     {
         try
         {
+            EventResponse existingEvent = await _eventService.GetEventById(id);
+            AuthorizationResult authorizationResult = await _authorizationService.AuthorizeAsync(
+                User, existingEvent.CreatorId, "Ownership");
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
+            }
+
             EventResponse response = await _eventService.UpdateEvent(id, dto);
             return Ok(response);
         }
@@ -74,10 +99,19 @@ public class EventController(EventService eventService) : Controller
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> DeleteChat([FromRoute] Guid id)
     {
         try
         {
+            EventResponse existingEvent = await _eventService.GetEventById(id);
+            AuthorizationResult authorizationResult = await _authorizationService.AuthorizeAsync(
+                User, existingEvent.CreatorId, "Ownership");
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
+            }
+
             await _eventService.DeleteEvent(id);
             return NoContent();
         }

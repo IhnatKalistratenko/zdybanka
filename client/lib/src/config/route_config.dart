@@ -43,15 +43,7 @@ final GoRouter router = GoRouter(
         GoRoute(path: "/map", builder: (context, state) => MapPage()),
         GoRoute(
           path: "/add-event",
-          builder: (context, state) => CreateEventPage(
-            eventService: EventService(
-              createEventUri: Uri(
-                host: "localhost",
-                port: 5801,
-                path: "/api/Event",
-              ),
-            ),
-          ),
+          builder: (context, state) => CreateEventPage(),
         ),
         GoRoute(path: "/chats", builder: (context, state) => ChatsPage()),
         GoRoute(

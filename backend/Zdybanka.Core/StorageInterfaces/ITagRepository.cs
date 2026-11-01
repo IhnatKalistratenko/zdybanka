@@ -6,6 +6,7 @@ public interface ITagRepository
 {
     Task<Tag> AddTagAsync(Tag tag);
     Task<Tag?> GetTagByIdAsync(Guid id);
+    Task<List<Tag>> GetTagsByIdsAsync(IReadOnlyCollection<Guid> ids);
     Task<List<Tag>> GetTagsAsync();
     void RemoveTag(Tag tag);
     Task<int> SaveChangesAsync();

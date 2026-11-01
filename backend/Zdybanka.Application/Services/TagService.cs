@@ -38,6 +38,23 @@ public class TagService
         }).ToList();
     }
 
+    public async Task<List<Tag>> GetTagsByIdsAsync(IReadOnlyCollection<Guid> ids)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        List<Guid> distinctIds = ids.Distinct().ToList();
+        List<Tag> tags = await _repository.GetTagsByIdsAsync(distinctIds);
+        if (tags.Count != distinctIds.Count)
+        {
+            throw new KeyNotFoundException("One or more tags were not found.");
+        }
+
+        return tags;
+    }
+
     public async Task<TagResponse> AddTagAsync(string name)
     {
         if ((await _repository.FindTagAsync(t => t.Name == name)) != null)

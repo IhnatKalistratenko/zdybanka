@@ -6,10 +6,11 @@ using Zdybanka.Core.StorageInterfaces;
 
 namespace Zdybanka.Application.Services;
 
-public class EventService(IEventRepository repository, ChatService chatService)
+public class EventService(IEventRepository repository, ChatService chatService, TagService tagService)
 {
     private readonly IEventRepository _repository = repository;
     private readonly ChatService _chatService = chatService;
+    private readonly TagService _tagService = tagService;
 
     public async Task<List<EventResponse>> GetEvents(EventFilter queryParams)
     {
@@ -35,16 +36,24 @@ public class EventService(IEventRepository repository, ChatService chatService)
         {
             Name = dto.Name,
             Description = dto.Description,
-            Status = Enum.Parse<EventStatus>(dto.Status, true),
+            Status = EventStatus.Active,
             Address = dto.Address,
             CreatorId = dto.CreatorId,
             MaxParticipants = dto.MaxParticipants,
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
-            Coordinates = dto.Coordinates
+            Coordinates = dto.ToPoint(),
         };
+
+        List<Tag> tags = await _tagService.GetTagsByIdsAsync(dto.TagIds);
+        foreach (Tag tag in tags)
+        {
+            newEvent.Tags.Add(tag);
+        }
         
         await _repository.AddEventAsync(newEvent);
+        
+        await _repository.SaveChangesAsync();
         
         CreateChatDto chatDto = new CreateChatDto()
         {
@@ -56,7 +65,6 @@ public class EventService(IEventRepository repository, ChatService chatService)
         chatDto.ParticipantsIds.Add(newEvent.CreatorId);
         
         await _chatService.CreateChat(chatDto);
-        await _repository.SaveChangesAsync();
         
         return new EventResponse(newEvent);
     }
