@@ -1,3 +1,4 @@
+using NetTopologySuite;
 using NetTopologySuite.Geometries;
 
 namespace Zdybanka.Application.DTO.Event;
@@ -11,5 +12,16 @@ public record UpdateEventDto
     public required DateTime  StartTime { get; set; }
     public required DateTime  EndTime { get; set; }
     public required int MaxParticipants { get; set; }
-    public required Point Coordinates { get; set; }
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public List<Guid> TagIds { get; set; } = [];
+    
+    public Point ToPoint()
+    {
+        var geometryFactory = NtsGeometryServices.Instance
+            .CreateGeometryFactory(srid: 4326);
+
+        return geometryFactory.CreatePoint(
+            new Coordinate(Longitude, Latitude));
+    }
 }

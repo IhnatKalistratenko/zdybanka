@@ -89,4 +89,54 @@ public class ChatService(IChatRepository repository)
         _repository.RemoveChat(dbChat);
         await _repository.SaveChangesAsync();
     }
+
+    public async Task AddUserToChatAsync(Guid chatId, Guid userId)
+    {
+        Chat? dbChat = await _repository.GetChatByIdAsync(chatId);
+        if (dbChat == null)
+        {
+            throw new KeyNotFoundException();
+        }
+        
+        dbChat.UserChats.Add(new UserChat()
+        {
+            UserId = userId,
+            ChatId = chatId
+        });
+
+        _repository.UpdateChat(dbChat);
+        await _repository.SaveChangesAsync();
+    }
+
+    public async Task<ChatResponse> GetChatByEventIdAsync(Guid eventId)
+    {
+        var chat = await _repository.GetChatByEventIdAsync(eventId);
+        if (chat == null)
+        {
+            throw new KeyNotFoundException();
+        }
+
+        return new ChatResponse()
+        {
+            Id = chat.Id,
+            EventId = chat.EventId,
+            Description = chat.Description,
+            Name = chat.Name,
+            Status = chat.Status.ToString()
+        };
+    }
+
+    public async Task DeleteUserFromChatAsync(Guid chatId, Guid userId)
+    {
+        var chat = await _repository.GetChatByIdAsync(chatId);
+        if (chat == null)
+        {
+            throw new KeyNotFoundException();
+        }
+        
+        chat.UserChats.Remove(chat.UserChats.First(e => e.UserId == userId));
+        
+        _repository.UpdateChat(chat);
+        await _repository.SaveChangesAsync();
+    }
 }

@@ -1,53 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
 
 import '../models/event.dart';
+import '../models/event_query.dart';
+import '../models/event_tag.dart';
+import '../services/event_service.dart';
+import '../services/tag_service.dart';
+import '../tools.dart';
 import '../widgets/event_card.dart';
-
-// TODO: замінити тестові дані відповіддю від ASP.NET API.
-final mockEvents = <Event>[
-  Event(
-    id: '1',
-    name: 'Вечір настільних ігор',
-    description:
-    'Збираємося разом, щоб познайомитися, '
-        'пограти в настільні ігри та приємно провести вечір.',
-    address: 'вул. Лесі Українки, 15, Луцьк',
-    startTime: DateTime(2026, 10, 29, 18),
-    endTime: DateTime(2026, 10, 29, 21),
-    maxParticipants: 12,
-    participantsCount: 7,
-    tags: ['Ігри', 'Спілкування'],
-    distanceKm: 0.3,
-  ),
-  Event(
-    id: '2',
-    name: 'Спільна пробіжка',
-    description:
-    'Легка пробіжка в парку для всіх охочих. '
-        'Темп комфортний, досвід не обов’язковий.',
-    address: 'Центральний парк, Луцьк',
-    startTime: DateTime(2026, 10, 30, 9),
-    endTime: DateTime(2026, 10, 30, 10),
-    maxParticipants: 20,
-    participantsCount: 8,
-    tags: ['Спорт', 'Здоров’я'],
-    distanceKm: 1.2,
-  ),
-  Event(
-    id: '3',
-    name: 'Вечір акустичної музики',
-    description:
-    'Неформальна зустріч музикантів і слухачів. '
-        'Можна грати, співати або просто слухати.',
-    address: 'вул. Кривий Вал, 10, Луцьк',
-    startTime: DateTime(2026, 11, 1, 17),
-    endTime: DateTime(2026, 11, 1, 20),
-    maxParticipants: 15,
-    participantsCount: 10,
-    tags: ['Музика', 'Спілкування'],
-    distanceKm: 2.4,
-  ),
-];
+import '../widgets/event_details_widget.dart';
 
 class EventsPage extends StatefulWidget {
   static final String pageRoute = "/events";
@@ -58,36 +19,37 @@ class EventsPage extends StatefulWidget {
 }
 
 class _EventsPageState extends State<EventsPage> {
-  List<Event> events = [];
+  final EventService _eventService = EventService();
+  final TagService _tagService = TagService();
 
-  double maxDistance = 5;
+  List<Event> events = [];
+  List<EventTag> availableTags = [];
+
+  double maxDistanceKm = 5;
   final Set<String> selectedTags = {};
 
   DateTime? startFrom;
-  DateTime? endBefore;
+  DateTime? endTo;
 
-  String sortBy = 'date';
+  String sortBy = 'StartDate';
 
   bool isLoading = false;
+  bool isLoadingTags = false;
   String? errorMessage;
-
-  final List<String> availableTags = [
-    'Ігри',
-    'Спілкування',
-    'Спорт',
-    'Здоров’я',
-    'Музика',
-    'Навчання',
-  ];
+  String? tagErrorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    final now = DateTime.now();
+    startFrom = DateTime(now.year, now.month, now.day);
+    _loadPageData();
   }
 
-  // TODO: замінити mockEvents на запит до API.
-  // Наприклад: GET /api/events?...
+  Future<void> _loadPageData() async {
+    await Future.wait([_loadEvents(), _loadTags()]);
+  }
+
   Future<void> _loadEvents() async {
     setState(() {
       isLoading = true;
@@ -95,74 +57,66 @@ class _EventsPageState extends State<EventsPage> {
     });
 
     try {
-      // Імітуємо отримання даних із сервера.
-      await Future<void>.delayed(
-        const Duration(milliseconds: 300),
+      LatLong userPosition = await determinePosition();
+      final loadedEvents = await _eventService.getEvents(
+        EventQuery(
+          status: 'Active',
+          userStatus: 'Available',
+          startFrom: startFrom?.toUtc(),
+          endTo: endTo == null
+              ? null
+              : DateTime(endTo!.year, endTo!.month, endTo!.day, 23, 59, 59).toUtc(),
+          userLongitude: userPosition.longitude,
+          userLatitude: userPosition.latitude,
+          radiusMeters: maxDistanceKm * 1000,
+          tags: selectedTags,
+          orderMethod: sortBy,
+          page: 1,
+          pageSize: 20,
+        ),
       );
 
       if (!mounted) return;
 
       setState(() {
-        events = mockEvents;
+        events = loadedEvents;
         isLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
 
       setState(() {
-        errorMessage = 'Не вдалося завантажити події.';
+        errorMessage = _errorText(error, 'Could not load events.');
         isLoading = false;
       });
     }
   }
 
-  List<Event> get filteredEvents {
-    final result = events.where((event) {
-      if (event.distanceKm > maxDistance) return false;
+  Future<void> _loadTags() async {
+    setState(() {
+      isLoadingTags = true;
+      tagErrorMessage = null;
+    });
 
-      // Якщо вибрано кілька тегів, достатньо збігу
-      // хоча б з одним із них.
-      if (selectedTags.isNotEmpty &&
-          !event.tags.any(selectedTags.contains)) {
-        return false;
-      }
-
-      if (startFrom != null &&
-          event.startTime.isBefore(startFrom!)) {
-        return false;
-      }
-
-      if (endBefore != null &&
-          event.endTime.isAfter(
-            DateTime(
-              endBefore!.year,
-              endBefore!.month,
-              endBefore!.day,
-              23,
-              59,
-              59,
-            ),
-          )) {
-        return false;
-      }
-
-      return true;
-    }).toList();
-
-    switch (sortBy) {
-      case 'distance':
-        result.sort(
-              (a, b) => a.distanceKm.compareTo(b.distanceKm),
-        );
-      case 'name':
-        result.sort((a, b) => a.name.compareTo(b.name));
-      default:
-        result.sort(
-              (a, b) => a.startTime.compareTo(b.startTime),
-        );
+    try {
+      final tags = await _tagService.getTags();
+      if (!mounted) return;
+      setState(() {
+        availableTags = tags;
+        isLoadingTags = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        tagErrorMessage = _errorText(error, 'Could not load tags.');
+        isLoadingTags = false;
+      });
     }
+  }
 
-    return result;
+  String _errorText(Object error, String fallback) {
+    final message = error.toString().trim();
+    return message.isEmpty ? fallback : message;
   }
 
   Future<void> _pickDate({
@@ -170,7 +124,7 @@ class _EventsPageState extends State<EventsPage> {
   }) async {
     final selected = await showDatePicker(
       context: context,
-      initialDate: (isStart ? startFrom : endBefore) ??
+      initialDate: (isStart ? startFrom : endTo) ??
           DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(
@@ -184,19 +138,21 @@ class _EventsPageState extends State<EventsPage> {
       if (isStart) {
         startFrom = selected;
       } else {
-        endBefore = selected;
+        endTo = selected;
       }
     });
   }
 
   void _resetFilters() {
     setState(() {
-      maxDistance = 5;
+      maxDistanceKm = 5;
       selectedTags.clear();
-      startFrom = null;
-      endBefore = null;
-      sortBy = 'date';
+      final now = DateTime.now();
+      startFrom = DateTime(now.year, now.month, now.day);
+      endTo = null;
+      sortBy = 'StartDate';
     });
+    _loadEvents();
   }
 
   String _formatDate(DateTime date) {
@@ -210,14 +166,13 @@ class _EventsPageState extends State<EventsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = filteredEvents;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Пошук подій'),
+        title: const Text('Find event'),
         actions: [
           IconButton(
-            tooltip: 'Оновити список',
+            tooltip: 'Update list',
             onPressed: _loadEvents,
             icon: const Icon(Icons.refresh),
           ),
@@ -233,18 +188,18 @@ class _EventsPageState extends State<EventsPage> {
               child: Row(
                 children: [
                   Text(
-                    'Знайдені події',
+                    'Events found',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium,
                   ),
                   const Spacer(),
-                  Text('${filtered.length}'),
+                  Text('${events.length}'),
                 ],
               ),
             ),
             Expanded(
-              child: _buildEventList(filtered),
+              child: _buildEventList(events),
             ),
           ],
         ),
@@ -254,9 +209,9 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildFilters() {
     return ExpansionTile(
-      initiallyExpanded: true,
+      initiallyExpanded: false,
       title: const Text(
-        'Фільтри',
+        'Filters',
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       leading: const Icon(Icons.tune),
@@ -264,42 +219,56 @@ class _EventsPageState extends State<EventsPage> {
       children: [
         Row(
           children: [
-            const Text('Відстань'),
+            const Text('Distance'),
             const Spacer(),
-            Text('${maxDistance.toStringAsFixed(1)} км'),
+            Text('${maxDistanceKm.toStringAsFixed(1)} km'),
           ],
         ),
         Slider(
-          value: maxDistance,
-          min: 0.5,
+          value: maxDistanceKm,
+          min: 1,
           max: 50,
           divisions: 99,
-          label: '${maxDistance.toStringAsFixed(1)} км',
+          label: '${maxDistanceKm.toStringAsFixed(1)} km',
           onChanged: (value) {
-            setState(() => maxDistance = value);
+            setState(() => maxDistanceKm = value);
           },
         ),
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            'Теги',
+            'Tags',
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
         const SizedBox(height: 6),
-        Wrap(
+        if (isLoadingTags)
+          const LinearProgressIndicator()
+        else if (tagErrorMessage != null)
+          Row(
+            children: [
+              Expanded(child: Text(tagErrorMessage!)),
+              IconButton(
+                tooltip: 'Retry loading tags',
+                onPressed: _loadTags,
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          )
+        else
+          Wrap(
           spacing: 8,
           runSpacing: 0,
           children: availableTags.map((tag) {
             return FilterChip(
-              label: Text(tag),
-              selected: selectedTags.contains(tag),
+              label: Text(tag.name),
+              selected: selectedTags.contains(tag.id),
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
-                    selectedTags.add(tag);
+                    selectedTags.add(tag.id);
                   } else {
-                    selectedTags.remove(tag);
+                    selectedTags.remove(tag.id);
                   }
                 });
               },
@@ -315,7 +284,7 @@ class _EventsPageState extends State<EventsPage> {
                 icon: const Icon(Icons.calendar_month),
                 label: Text(
                   startFrom == null
-                      ? 'Початок від'
+                      ? 'Starting from'
                       : _formatDate(startFrom!),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -327,9 +296,9 @@ class _EventsPageState extends State<EventsPage> {
                 onPressed: () => _pickDate(isStart: false),
                 icon: const Icon(Icons.event_available),
                 label: Text(
-                  endBefore == null
-                      ? 'Завершення до'
-                      : _formatDate(endBefore!),
+                  endTo == null
+                      ? 'Ending by'
+                      : _formatDate(endTo!),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -340,22 +309,22 @@ class _EventsPageState extends State<EventsPage> {
         DropdownButtonFormField<String>(
           value: sortBy,
           decoration: const InputDecoration(
-            labelText: 'Сортування',
+            labelText: 'Sort by',
             border: OutlineInputBorder(),
             isDense: true,
           ),
           items: const [
             DropdownMenuItem(
-              value: 'date',
-              child: Text('За датою початку'),
+              value: 'StartDate',
+              child: Text('Start date'),
             ),
             DropdownMenuItem(
-              value: 'distance',
-              child: Text('За відстанню'),
+              value: 'Distance',
+              child: Text('Distance'),
             ),
             DropdownMenuItem(
-              value: 'name',
-              child: Text('За назвою'),
+              value: 'Name',
+              child: Text('Name'),
             ),
           ],
           onChanged: (value) {
@@ -367,9 +336,18 @@ class _EventsPageState extends State<EventsPage> {
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: _resetFilters,
-            child: const Text('Скинути фільтри'),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              TextButton(
+                onPressed: _resetFilters,
+                child: const Text('Reset filters'),
+              ),
+              FilledButton(
+                onPressed: isLoading ? null : _loadEvents,
+                child: const Text('Apply filters'),
+              ),
+            ],
           ),
         ),
       ],
@@ -392,7 +370,7 @@ class _EventsPageState extends State<EventsPage> {
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _loadEvents,
-              child: const Text('Спробувати ще раз'),
+              child: const Text('Try again'),
             ),
           ],
         ),
@@ -408,7 +386,7 @@ class _EventsPageState extends State<EventsPage> {
             children: [
               Icon(Icons.event_busy, size: 48),
               SizedBox(height: 12),
-              Text('Подій за заданими фільтрами не знайдено.'),
+              Text('No events match the selected filters.'),
             ],
           ),
         ),
@@ -427,127 +405,19 @@ class _EventsPageState extends State<EventsPage> {
           trailing: EventDistanceTrailing(
             distanceKm: event.distanceKm,
           ),
-          onTap: () => _showEventDetails(event),
-        );
-      },
-    );
-  }
-
-  void _showEventDetails(Event event) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              8,
-              20,
-              20 + MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    event.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 16),
-                  _detailRow(
-                    Icons.calendar_month,
-                    'Початок',
-                    _formatDate(event.startTime),
-                  ),
-                  _detailRow(
-                    Icons.event_available,
-                    'Завершення',
-                    _formatDate(event.endTime),
-                  ),
-                  _detailRow(
-                    Icons.location_on,
-                    'Адреса',
-                    event.address,
-                  ),
-                  _detailRow(
-                    Icons.people,
-                    'Учасники',
-                    '${event.participantsCount} '
-                        'із ${event.maxParticipants}',
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Опис',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(event.description),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: event.tags
-                        .map((tag) => Chip(label: Text(tag)))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: event.participantsCount >=
-                          event.maxParticipants
-                          ? null
-                          : () {
-                        // TODO: POST /api/events/{id}/join
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        event.participantsCount >=
-                            event.maxParticipants
-                            ? 'Немає вільних місць'
-                            : 'Доєднатися',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          onTap: () => showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => JoinableEventDetailsWidget(
+              eventId: event.id,
+              onJoinCallback: () {
+                _loadEvents();
+              },
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _detailRow(
-      IconData icon,
-      String title,
-      String value,
-      ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 21),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(height: 2),
-                Text(value),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

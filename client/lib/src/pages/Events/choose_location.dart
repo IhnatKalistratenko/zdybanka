@@ -48,11 +48,6 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
     return LatLong(position.latitude, position.longitude);
   }
 
-  void _chooseLocationCallback(PickedData pickedData)
-  {
-    Navigator.of(context).pop(pickedData);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

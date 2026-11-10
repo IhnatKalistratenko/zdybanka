@@ -19,4 +19,10 @@
     <ProjectReference Include="..\Zdybanka.Core\Zdybanka.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="xunit.assert">
+      <HintPath>..\..\..\..\.nuget\packages\xunit.assert\2.9.3\lib\net6.0\xunit.assert.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

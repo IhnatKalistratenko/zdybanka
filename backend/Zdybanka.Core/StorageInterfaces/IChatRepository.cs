@@ -10,4 +10,5 @@ public interface IChatRepository
     void RemoveChat(Chat chat);
     Task<int> SaveChangesAsync();
     Chat UpdateChat(Chat chat);
+    Task<Chat?> GetChatByEventIdAsync(Guid eventId);
 }

@@ -16,7 +16,7 @@ public class ChatRepository(ZdybankaContext context) : IChatRepository
 
     public Task<Chat?> GetChatByIdAsync(Guid id)
     {
-        return _context.Chats.FirstOrDefaultAsync(ch => ch.Id == id);
+        return _context.Chats.Include(chat => chat.UserChats).FirstOrDefaultAsync(ch => ch.Id == id);
     }
 
     public Task<List<Chat>> GetUserChatsAsync(Guid userId)
@@ -37,6 +37,11 @@ public class ChatRepository(ZdybankaContext context) : IChatRepository
     public Chat UpdateChat(Chat chat)
     {
         return _context.Chats.Update(chat).Entity;
+    }
+
+    public Task<Chat?> GetChatByEventIdAsync(Guid eventId)
+    {
+        return _context.Chats.FirstOrDefaultAsync(ch => ch.EventId == eventId);
     }
 
     public Task<int> SaveChangesAsync()

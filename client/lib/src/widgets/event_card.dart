@@ -15,21 +15,19 @@ class EventCard extends StatelessWidget {
   });
 
   String _formatDate(DateTime date) {
+    DateTime localDate = date.toLocal();
     String twoDigits(int value) => value.toString().padLeft(2, '0');
 
-    return '${twoDigits(date.day)}.'
-        '${twoDigits(date.month)}.'
-        '${date.year} '
-        '${twoDigits(date.hour)}:${twoDigits(date.minute)}';
+    return '${twoDigits(localDate.day)}.'
+        '${twoDigits(localDate.month)}.'
+        '${localDate.year} '
+        '${twoDigits(localDate.hour)}:${twoDigits(localDate.minute)}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 5,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
@@ -43,20 +41,12 @@ class EventCard extends StatelessWidget {
                 children: [
                   Text(
                     event.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-                  _infoRow(
-                    Icons.calendar_month,
-                    _formatDate(event.startTime),
-                  ),
+                  _infoRow(Icons.calendar_month, _formatDate(event.startTime)),
                   const SizedBox(height: 7),
-                  _infoRow(
-                    Icons.location_on,
-                    event.address,
-                  ),
+                  _infoRow(Icons.location_on, event.address),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 6,
@@ -64,13 +54,12 @@ class EventCard extends StatelessWidget {
                     children: event.tags.map((tag) {
                       return Chip(
                         label: Text(
-                          tag,
+                          tag.name,
                           style: const TextStyle(fontSize: 11),
                         ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
-                        materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       );
                     }).toList(),
                   ),
@@ -78,10 +67,7 @@ class EventCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            SizedBox(
-              width: 64,
-              child: trailing,
-            ),
+            SizedBox(width: 64, child: trailing),
           ],
         ),
       ),
@@ -94,12 +80,7 @@ class EventCard extends StatelessWidget {
       children: [
         Icon(icon, size: 19),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
       ],
     );
   }
@@ -108,10 +89,7 @@ class EventCard extends StatelessWidget {
 class EventDistanceTrailing extends StatelessWidget {
   final double distanceKm;
 
-  const EventDistanceTrailing({
-    super.key,
-    required this.distanceKm,
-  });
+  const EventDistanceTrailing({super.key, required this.distanceKm});
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +117,7 @@ class EventArrowTrailing extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [Icon(Icons.keyboard_arrow_right, size: 35,)],
+      children: [Icon(Icons.keyboard_arrow_right, size: 35)],
     );
   }
 }

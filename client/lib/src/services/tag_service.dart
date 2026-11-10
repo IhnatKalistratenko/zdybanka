@@ -22,7 +22,26 @@ class TagService {
         .timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200) {
-      throw TagServiceException(message: 'Failed to load tags.');
+      var message = 'Failed to load tags.';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map) {
+          for (final key in ['error', 'message', 'title', 'detail']) {
+            final value = body[key];
+            if (value is String && value.trim().isNotEmpty) {
+              message = value.trim();
+              break;
+            }
+          }
+        } else if (body is String && body.trim().isNotEmpty) {
+          message = body.trim();
+        }
+      } on FormatException {
+        if (response.body.trim().isNotEmpty) {
+          message = response.body.trim();
+        }
+      }
+      throw TagServiceException(message: message);
     }
 
     try {

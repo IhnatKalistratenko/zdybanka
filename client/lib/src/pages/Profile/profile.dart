@@ -1,13 +1,14 @@
-import 'package:client/src/config/storage_config.dart';
 import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/pages/Profile/edit_profile.dart';
-import 'package:client/src/pages/events.dart';
 import 'package:client/src/services/auth_service.dart';
+import 'package:client/src/services/event_service.dart';
 import 'package:client/src/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/event.dart';
 import '../../models/user.dart';
 import '../../widgets/event_card.dart';
+import '../../widgets/event_details_widget.dart';
 
 class ProfilePage extends StatefulWidget {
   static final String pageRoute = "/profile";
@@ -20,12 +21,21 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
 
   late Future<User> futureUser;
+  late Future<List<Event>> futureEvents;
 
   @override
   void initState() {
     super.initState();
 
     futureUser = UserService().getUser();
+    futureEvents = EventService().getMyEvents();
+  }
+
+  void _reloadEvents() {
+    if (!mounted) return;
+    setState(() {
+      futureEvents = EventService().getMyEvents();
+    });
   }
 
   Future<void> onExitClick() async {
@@ -108,13 +118,37 @@ class _ProfilePageState extends State<ProfilePage> {
                             EventsList(
                               title: "My events",
                               icon: Icon(Icons.calendar_month),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'created')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => OwnedEventDetailsWidget(
+                                eventId: id,
+                                onDeleteCallback: _reloadEvents,
+                              ),
                             ),
                             SizedBox(height: 10),
                             EventsList(title: "Joined events",
-                              icon: Icon(Icons.people),),
+                              icon: Icon(Icons.people),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'joined')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
+                                eventId: id,
+                                onLeaveCallback: _reloadEvents,
+                              ),),
                             SizedBox(height: 10),
                             EventsList(title: "Past events",
-                              icon: Icon(Icons.update),),
+                              icon: Icon(Icons.update),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'past')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
+                                eventId: id,
+                                onLeaveCallback: _reloadEvents,
+                              ),),
                           ],
                         )
                     ),
@@ -136,7 +170,10 @@ class _ProfilePageState extends State<ProfilePage> {
 class EventsList extends StatefulWidget {
   final String title;
   final Icon icon;
-  const EventsList({super.key, required this.title, required this.icon});
+  final Future<List<Event>> eventsFuture;
+  final List<Event> Function(List<Event>) selectEvents;
+  final Widget Function(String) detailsWidgetBuilder;
+  const EventsList({super.key, required this.title, required this.icon, required this.eventsFuture, required this.selectEvents, required this.detailsWidgetBuilder});
 
   @override
   State<EventsList> createState() => _EventsListState();
@@ -169,10 +206,42 @@ class _EventsListState extends State<EventsList> {
         ),
       ),
       children: [
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
+        FutureBuilder<List<Event>>(
+          future: widget.eventsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Could not load events: ${snapshot.error}'),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              );
+            }
+            final events = widget.selectEvents(snapshot.data!);
+            if (events.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No events found.'),
+              );
+            }
+            return Column(
+              children: events.map<Widget>((event) => EventCard(
+                trailing: const EventArrowTrailing(),
+                event: event,
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => widget.detailsWidgetBuilder(event.id),
+                ),
+              )).toList(),
+            );
+          },
+        ),
       ],
     );
   }
