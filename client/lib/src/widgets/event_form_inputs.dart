@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:client/src/theme/app_theme.dart';
 
 import 'form_field_container.dart';
 
@@ -94,10 +95,9 @@ class DateTimeInput extends StatelessWidget {
       errorText: errorText,
       child: InkWell(
         onTap: () => _selectDateTime(context),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
         child: InputDecorator(
           decoration: const InputDecoration(
-            border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.calendar_month),
             suffixIcon: Icon(Icons.chevron_right),
           ),
@@ -128,10 +128,9 @@ class SelectableInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       child: InputDecorator(
         decoration: InputDecoration(
-          border: const OutlineInputBorder(),
           prefixIcon: Icon(icon),
           suffixIcon: const Icon(Icons.chevron_right),
         ),

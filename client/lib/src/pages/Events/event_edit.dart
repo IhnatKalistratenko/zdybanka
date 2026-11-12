@@ -1,3 +1,4 @@
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
@@ -197,7 +198,7 @@ class _EditEventPageState extends State<EditEventPage> {
       appBar: AppBar(
         title: const Text(
           'Edit event',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
+          style: AppTypography.headingMedium,
         ),
       ),
       body: SafeArea(
@@ -241,7 +242,6 @@ class _EditEventPageState extends State<EditEventPage> {
                           maxLength: 50,
                           textCapitalization: TextCapitalization.sentences,
                           decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
                             hintText: 'Enter name of the event',
                           ),
                           validator: (value) {
@@ -266,7 +266,6 @@ class _EditEventPageState extends State<EditEventPage> {
                           keyboardType: TextInputType.multiline,
                           textCapitalization: TextCapitalization.sentences,
                           decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
                             hintText: 'Enter description',
                             alignLabelWithHint: true,
                           ),
@@ -330,7 +329,6 @@ class _EditEventPageState extends State<EditEventPage> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.people_outline),
                             hintText: 'Enter maximum participants',
                           ),
@@ -361,9 +359,7 @@ class _EditEventPageState extends State<EditEventPage> {
                       if (_submitError != null) ...[
                         Text(
                           _submitError!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                          style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -371,12 +367,6 @@ class _EditEventPageState extends State<EditEventPage> {
                         width: double.infinity,
                         child: OutlinedButton(
                           onPressed: _isSubmitting ? null : _submit,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
                           child: _isSubmitting
                               ? const SizedBox(
                                   width: 20,

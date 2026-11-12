@@ -27,14 +27,17 @@ class SignalrService {
 
   Stream<Message> get messages => _messageController.stream;
 
-  void _handleReceiveMessage(List<Object?>? arguments) {
+  void _handleReceiveMessage(List<Object?>? arguments) async {
     if (arguments == null || arguments.isEmpty || arguments.first is! Map) {
       return;
     }
 
     try {
       final payload = Map<String, dynamic>.from(arguments.first as Map);
-      _messageController.add(Message.fromJson(payload));
+      final message = Message.fromJson(payload);
+      final userId = await secureStorage.read(key: userIdStorageKey);
+      message.isOwner = userId == message.senderId;
+      _messageController.add(message);
     } on FormatException {
       // Ignore malformed payloads so one bad event does not break the stream.
     } on TypeError {

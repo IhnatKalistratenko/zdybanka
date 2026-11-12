@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:client/src/theme/app_typography.dart';
 
 import '../models/event.dart';
 
@@ -27,7 +28,6 @@ class EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
@@ -41,7 +41,7 @@ class EventCard extends StatelessWidget {
                 children: [
                   Text(
                     event.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: AppTypography.titleSmall,
                   ),
                   const SizedBox(height: 10),
                   _infoRow(Icons.calendar_month, _formatDate(event.startTime)),
@@ -55,7 +55,7 @@ class EventCard extends StatelessWidget {
                       return Chip(
                         label: Text(
                           tag.name,
-                          style: const TextStyle(fontSize: 11),
+                          style: AppTypography.overline,
                         ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
@@ -80,7 +80,7 @@ class EventCard extends StatelessWidget {
       children: [
         Icon(icon, size: 19),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+        Expanded(child: Text(text, style: AppTypography.label)),
       ],
     );
   }
@@ -101,7 +101,7 @@ class EventDistanceTrailing extends StatelessWidget {
         Text(
           '${distanceKm.toStringAsFixed(1)} км',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12),
+          style: AppTypography.caption,
         ),
         const Icon(Icons.keyboard_arrow_right, size: 28),
       ],

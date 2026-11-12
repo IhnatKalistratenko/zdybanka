@@ -1,3 +1,5 @@
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_colors.dart';
 import 'package:client/src/models/login_request.dart';
 import 'package:client/src/pages/Authorization/register.dart';
 import 'package:client/src/pages/Events/events.dart';
@@ -95,7 +97,7 @@ class _LoginFormState extends State<LoginForm> {
           Center(
             child: const Text(
               "Good to see you again",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40),
+              style: AppTypography.headingLarge,
             ),
           ),
           const SizedBox(height: 30),
@@ -110,7 +112,6 @@ class _LoginFormState extends State<LoginForm> {
               return null;
             },
             decoration: InputDecoration(
-              border: OutlineInputBorder(),
               hintText: "Enter your username",
             ),
           ),
@@ -129,7 +130,6 @@ class _LoginFormState extends State<LoginForm> {
               return null;
             },
             decoration: InputDecoration(
-              border: OutlineInputBorder(),
               hintText: "Enter your password",
             ),
           ),
@@ -143,7 +143,7 @@ class _LoginFormState extends State<LoginForm> {
                   onPressed: _isSubmitting ? null : login,
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    textStyle: AppTypography.button,
                   ),
                   child: _isSubmitting ? const SizedBox(
                     width: 20,
@@ -167,9 +167,8 @@ class _LoginFormState extends State<LoginForm> {
                       ),
                       TextSpan(
                         text: "register",
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+                        style: AppTypography.button.copyWith(
+                          color: AppColors.primary,
                           decoration: TextDecoration.underline,
                         ),
                         recognizer: TapGestureRecognizer()

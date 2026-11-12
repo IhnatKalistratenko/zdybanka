@@ -1,3 +1,5 @@
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
@@ -34,9 +36,9 @@ class _PrimaryTileLayerState extends State<PrimaryTileLayer> {
             duration: Duration(seconds: _showErrorBarDurationSeconds),
             content: Text(
               "Failed to load map",
-              style: const TextStyle(color: Colors.black),
+              style: AppTypography.body.copyWith(color: AppColors.onDark),
             ),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.destructive,
           ));
         });
       },

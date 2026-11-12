@@ -1,3 +1,5 @@
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 
 class ErrorCardContent {
@@ -15,7 +17,7 @@ class ErrorCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        color: Colors.red[400],
+        color: AppColors.error,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
           child: Column(
@@ -23,13 +25,23 @@ class ErrorCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning),
-                  Text(error.type ?? "", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17,))
+                  const Icon(Icons.warning, color: AppColors.onPrimary),
+                  Text(
+                    error.type ?? "",
+                    style: AppTypography.titleMedium.copyWith(
+                      color: AppColors.onPrimary,
+                    ),
+                  ),
                 ],
               ),
               Row(
                 children: [
-                  Text(error.message),
+                  Text(
+                    error.message,
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.onPrimary,
+                    ),
+                  ),
                 ],
               )
             ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:client/src/theme/app_colors.dart';
 import 'package:client/src/models/event_boundary_request.dart';
 import 'package:client/src/services/event_service.dart';
 import 'package:client/src/tools.dart';
@@ -168,16 +169,16 @@ class _MapPageState extends State<MapPage> {
   MaterialColor _getMarkerColor(String userStatus)
   {
     if(userStatus == "Created") {
-        return Colors.amber;
+        return AppColors.markerWarning;
     }
     if(userStatus == "Joined") {
-      return Colors.blue;
+      return AppColors.markerPrimary;
     }
     if(userStatus == "Past") {
-      return Colors.grey;
+      return AppColors.markerNeutral;
     }
 
-    return Colors.red;
+    return AppColors.markerError;
   }
 
   @override
@@ -217,7 +218,7 @@ class _MapPageState extends State<MapPage> {
                       });
                       _alignPositionStreamController.add(16);
                     },
-                      child: Icon(Icons.my_location, color: Colors.blueAccent,),
+                      child: Icon(Icons.my_location, color: AppColors.location,),
                     ),
                   ),
                   FutureBuilder(future: futureMarkers,

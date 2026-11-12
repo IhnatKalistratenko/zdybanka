@@ -1,3 +1,6 @@
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_theme.dart';
 import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/pages/Profile/edit_profile.dart';
 import 'package:client/src/services/auth_service.dart';
@@ -70,11 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               Text(
                                 snapshot.data!.username,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  letterSpacing: 1.5,
-                                ),
+                                style: AppTypography.title.copyWith(letterSpacing: 1.5),
                               ),
                               OutlinedButton.icon(
                                 label: Text("Exit"),
@@ -82,17 +81,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: ButtonStyle(
                                   shape: WidgetStatePropertyAll(
                                     RoundedRectangleBorder(
-                                      borderRadius: BorderRadiusGeometry.circular(8.0),
+                                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                                     ),
                                   ),
                                   side: WidgetStatePropertyAll(
-                                    BorderSide(color: Colors.red[400]!),
+                                    BorderSide(color: AppColors.error),
                                   ),
                                   foregroundColor: WidgetStatePropertyAll(
-                                    Colors.red[400],
+                                    AppColors.error,
                                   ),
                                 ),
-                                icon: Icon(Icons.exit_to_app, color: Colors.red[400]),
+                                icon: Icon(Icons.exit_to_app, color: AppColors.error),
                               ),
                             ],
                           ),
@@ -184,23 +183,24 @@ class _EventsListState extends State<EventsList> {
   Widget build(BuildContext context) {
     return ExpansionTile(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
       collapsedShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
-      collapsedBackgroundColor: Colors.white,
-      backgroundColor: Colors.white,
+      collapsedBackgroundColor: AppColors.surface,
+      backgroundColor: AppColors.surface,
       title: RichText(
         text: TextSpan(
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.3),
+          style: AppTypography.titleMedium.copyWith(letterSpacing: 1.3),
           children: [
             WidgetSpan(child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
               child: widget.icon,
             )),
             TextSpan(
-                text: widget.title
+                text: widget.title,
+              style: AppTypography.title.copyWith(color: AppColors.onDark)
             )
           ],
         ),

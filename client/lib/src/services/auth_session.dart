@@ -14,6 +14,7 @@ class AuthSession {
     _isHandlingUnauthorized = true;
     try {
       await secureStorage.delete(key: 'token');
+      await secureStorage.delete(key: userIdStorageKey);
       await _onUnauthorized?.call();
     } finally {
       _isHandlingUnauthorized = false;

@@ -1,3 +1,4 @@
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -242,10 +243,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create new event',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 26,
-        )),
+        style: AppTypography.headingMedium),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -263,7 +261,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     maxLength: 50,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
                       hintText: 'Enter name of the event',
                     ),
                     validator: (value) {
@@ -297,7 +294,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
                       hintText: 'Enter description',
                       alignLabelWithHint: true,
                     ),
@@ -374,7 +370,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       FilteringTextInputFormatter.digitsOnly,
                     ],
                     decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.people_outline),
                       hintText: 'Enter maximum participants',
                     ),
@@ -417,7 +412,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   const SizedBox(height: 8),
                   Text(
                     _tagsError!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -425,9 +420,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 if (_submitError != null) ...[
                   Text(
                     _submitError!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -436,12 +429,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: _isSubmitting ? null : _submit,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
                     child: _isSubmitting
                         ? const SizedBox(
                       width: 20,

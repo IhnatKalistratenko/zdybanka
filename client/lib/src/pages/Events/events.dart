@@ -1,3 +1,4 @@
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
 
@@ -212,7 +213,7 @@ class _EventsPageState extends State<EventsPage> {
       initiallyExpanded: false,
       title: const Text(
         'Filters',
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: AppTypography.titleSmall,
       ),
       leading: const Icon(Icons.tune),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -310,7 +311,6 @@ class _EventsPageState extends State<EventsPage> {
           value: sortBy,
           decoration: const InputDecoration(
             labelText: 'Sort by',
-            border: OutlineInputBorder(),
             isDense: true,
           ),
           items: const [

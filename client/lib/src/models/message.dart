@@ -5,9 +5,9 @@ class Message {
   final String senderName;
   final String content;
   final DateTime sentAt;
-  final bool isOwner;
+  bool isOwner;
 
-  const Message({
+  Message({
     required this.id,
     required this.chatId,
     required this.senderId,

@@ -1,6 +1,9 @@
 
 import 'dart:async';
 
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_theme.dart';
 import 'package:client/src/services/signalr_service.dart';
 import 'package:flutter/material.dart';
 import 'package:client/src/models/extended_chat.dart';
@@ -99,11 +102,6 @@ class _ChatPageState extends State<ChatPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
       builder: (context) {
         return ChatDetailsPopUp(
           chatName: chat.name,
@@ -143,7 +141,7 @@ class _ChatPageState extends State<ChatPage> {
             final chat = _loadedChat;
             if (chat != null) _showChatDetails(chat);
           },
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: FutureBuilder<ExtendedChat>(
@@ -158,10 +156,8 @@ class _ChatPageState extends State<ChatPage> {
                       chat?.name ?? 'Chat',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF172033),
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -170,9 +166,8 @@ class _ChatPageState extends State<ChatPage> {
                         chat.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF718096),
+                        style: AppTypography.label.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
                   ],
@@ -238,7 +233,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
 
           // Message input
-          const Divider(height: 1, color: Color(0xFFE5EAF1)),
+          const Divider(height: 1, color: AppColors.border),
           SafeArea(
             top: false,
             child: Padding(
@@ -255,18 +250,14 @@ class _ChatPageState extends State<ChatPage> {
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: 'Write you message...',
-                        hintStyle: const TextStyle(
-                          color: Color(0xFF8A96A8),
+                        hintStyle: AppTypography.body.copyWith(
+                          color: AppColors.textMuted,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF5F7FA),
+                        fillColor: AppColors.background,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
@@ -275,8 +266,8 @@ class _ChatPageState extends State<ChatPage> {
                   IconButton.filled(
                     onPressed: _isSending ? null : _sendMessage,
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF3478F6),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
                       fixedSize: const Size(48, 48),
                     ),
                     icon: const Icon(Icons.send_rounded, size: 21),
@@ -317,19 +308,18 @@ class _MessageDateDivider extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 16),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: Color(0xFFE5EAF1))),
+          const Expanded(child: Divider(color: AppColors.border)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
+              style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF718096),
+                color: AppColors.textSecondary,
               ),
             ),
           ),
-          const Expanded(child: Divider(color: Color(0xFFE5EAF1))),
+          const Expanded(child: Divider(color: AppColors.border)),
         ],
       ),
     );
@@ -383,10 +373,8 @@ class _MessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 4, bottom: 5),
                 child: Text(
                   sender,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF52627A),
+                  style: AppTypography.label.copyWith(
+                    color: AppColors.secondary,
                   ),
                 ),
               ),
@@ -398,8 +386,8 @@ class _MessageBubble extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: isMine
-                    ? const Color(0xFF3478F6)
-                    : const Color(0xFFF0F3F8),
+                    ? AppColors.primary
+                    : AppColors.chatBubble,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -412,22 +400,19 @@ class _MessageBubble extends StatelessWidget {
                 children: [
                   Text(
                     message.content,
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.4,
+                    style: AppTypography.body.copyWith(
                       color: isMine
-                          ? Colors.white
-                          : const Color(0xFF172033),
+                          ? AppColors.onPrimary
+                          : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     time,
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: AppTypography.overline.copyWith(
                       color: isMine
-                          ? Colors.white70
-                          : const Color(0xFF718096),
+                          ? AppColors.onPrimaryMuted
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -470,7 +455,7 @@ class ChatDetailsPopUp extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.disabled,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -488,10 +473,9 @@ class ChatDetailsPopUp extends StatelessWidget {
                       children: [
                         Text(
                           chatName,
-                          style: const TextStyle(
+                          style: AppTypography.headingSmall.copyWith(
                             fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF172033),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         if (chatDescription != null &&
@@ -499,10 +483,8 @@ class ChatDetailsPopUp extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             chatDescription!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 1.5,
-                              color: Color(0xFF718096),
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -514,11 +496,13 @@ class ChatDetailsPopUp extends StatelessWidget {
                     onPressed: onEditTap,
                     tooltip: 'Edit chat',
                     icon: const Icon(Icons.edit_outlined),
-                    color: const Color(0xFF3478F6),
+                    color: AppColors.primary,
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFFEDF3FF),
+                      backgroundColor: AppColors.primarySurface,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
                       ),
                     ),
                   ),
@@ -528,17 +512,16 @@ class ChatDetailsPopUp extends StatelessWidget {
               const SizedBox(height: 24),
               const Divider(
                 height: 1,
-                color: Color(0xFFE5EAF1),
+                color: AppColors.border,
               ),
               const SizedBox(height: 20),
       
               if (participants.isNotEmpty) ...[
                 Text(
                   'Members (${participants.length})',
-                  style: const TextStyle(
+                  style: AppTypography.title.copyWith(
                     fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF172033),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -547,9 +530,8 @@ class ChatDetailsPopUp extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       participant,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF172033),
+                      style: AppTypography.body.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),

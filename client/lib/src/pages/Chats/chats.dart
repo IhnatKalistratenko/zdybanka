@@ -1,3 +1,6 @@
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_theme.dart';
 import 'package:client/src/services/chat_service.dart';
 import 'package:flutter/material.dart';
 
@@ -27,10 +30,7 @@ class _ChatsPageState extends State<ChatsPage> {
       appBar: AppBar(
         title: const Text(
           "Chats",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 26,
-          ),
+          style: AppTypography.headingMedium,
         ),
         elevation: 0,
       ),
@@ -52,10 +52,12 @@ class _ChatsPageState extends State<ChatsPage> {
 
             final chats = snapshot.data ?? const <ChatView>[];
             if (chats.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   'You have no chats yet.',
-                  style: TextStyle(color: Color(0xFF718096), fontSize: 16),
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               );
             }
@@ -66,7 +68,7 @@ class _ChatsPageState extends State<ChatsPage> {
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 thickness: 1,
-                color: Color(0xFFE5EAF1),
+                color: AppColors.border,
               ),
               itemBuilder: (context, index) {
                 final chat = chats[index];
@@ -107,7 +109,7 @@ class ChatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: 4,
@@ -123,10 +125,8 @@ class ChatCard extends StatelessWidget {
                     chatName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF172033),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    style: AppTypography.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (lastChatMessage != null) ...[
@@ -135,9 +135,8 @@ class ChatCard extends StatelessWidget {
                       lastChatMessage!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF718096),
-                        fontSize: 14,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -147,7 +146,7 @@ class ChatCard extends StatelessWidget {
             const SizedBox(width: 8),
             const Icon(
               Icons.chevron_right,
-              color: Color(0xFF718096),
+              color: AppColors.textSecondary,
               size: 22,
             ),
           ],

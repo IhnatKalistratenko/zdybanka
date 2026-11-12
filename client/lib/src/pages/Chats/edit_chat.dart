@@ -1,4 +1,6 @@
 
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:client/src/services/chat_service.dart';
 
@@ -126,12 +128,8 @@ class _EditChatPageState extends State<EditChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Редагування чату'),
-        elevation: 0.7,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -140,20 +138,14 @@ class _EditChatPageState extends State<EditChatPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Редагування чату',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  color: Color(0xFF172033),
-                ),
+                style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
               ),
               const SizedBox(height: 5),
-              const Text(
+              Text(
                 'Змініть назву та опис вашого чату.',
-                style: TextStyle(
-                  color: Color(0xFF718096),
-                ),
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
               ),
 
               const Padding(
@@ -164,10 +156,7 @@ class _EditChatPageState extends State<EditChatPage> {
               // Chat name
               const Text(
                 'Назва чату',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
+                style: AppTypography.title,
               ),
               const SizedBox(height: 5),
               const Text(
@@ -183,7 +172,6 @@ class _EditChatPageState extends State<EditChatPage> {
                 decoration: const InputDecoration(
                   labelText: 'Назва',
                   hintText: 'Введіть назву чату',
-                  border: OutlineInputBorder(),
                   counterText: '',
                 ),
               ),
@@ -195,10 +183,7 @@ class _EditChatPageState extends State<EditChatPage> {
                   builder: (context, value, child) {
                     return Text(
                       '${value.text.length}/50',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                      ),
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                     );
                   },
                 ),
@@ -212,10 +197,7 @@ class _EditChatPageState extends State<EditChatPage> {
               // Chat description
               const Text(
                 'Опис чату',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
+                style: AppTypography.title,
               ),
               const SizedBox(height: 5),
               const Text(
@@ -235,7 +217,6 @@ class _EditChatPageState extends State<EditChatPage> {
                   labelText: 'Опис',
                   hintText: 'Введіть опис чату',
                   alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
                   counterText: '',
                 ),
               ),
@@ -247,10 +228,7 @@ class _EditChatPageState extends State<EditChatPage> {
                   builder: (context, value, child) {
                     return Text(
                       '${value.text.length}/1000',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                      ),
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                     );
                   },
                 ),
@@ -263,30 +241,18 @@ class _EditChatPageState extends State<EditChatPage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isSaving || !_hasChanges ? null : _saveChanges,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3478F6),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   child: _isSaving
                       ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppColors.onPrimary,
                     ),
                   )
                       : const Text(
                     'Зберегти зміни',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTypography.button,
                   ),
                 ),
               ),
