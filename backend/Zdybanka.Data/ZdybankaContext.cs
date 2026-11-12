@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Zdybanka.Core;
+using Zdybanka.Core.Models;
 using Zdybanka.Data.DTO;
 
 namespace Zdybanka.Data;
@@ -28,6 +29,7 @@ public partial class ZdybankaContext : DbContext
     public virtual DbSet<UserChat> UserChats { get; set; }
 
     public virtual DbSet<UserEvent> UserEvents { get; set; }
+    public virtual DbSet<Message> Messages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -201,6 +203,56 @@ public partial class ZdybankaContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.UserEvents)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("user_events_user_id_fkey");
+        });
+        
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.ToTable("messages");
+
+            entity.HasKey(m => m.Id);
+
+            entity.Property(m => m.Id)
+                .HasColumnName("id")
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            entity.Property(m => m.ChatId)
+                .HasColumnName("chat_id")
+                .IsRequired();
+
+            entity.Property(m => m.SenderId)
+                .HasColumnName("sender_id")
+                .IsRequired();
+
+            entity.Property(m => m.Content)
+                .HasColumnName("content")
+                .HasColumnType("text")
+                .IsRequired();
+
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_messages_content_not_empty",
+                    "LENGTH(TRIM(content)) > 0"
+                );
+            });
+
+            entity.Property(m => m.SentAt)
+                .HasColumnName("sent_at")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("NOW()");
+
+            entity.HasOne(m => m.Chat)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ChatId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(m => new { m.ChatId, m.SentAt })
+                .HasDatabaseName("idx_messages_chat_sent_at");
         });
 
         OnModelCreatingPartial(modelBuilder);

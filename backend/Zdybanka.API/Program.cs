@@ -1,9 +1,11 @@
 
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Zdybanka.API.Hubs;
 using Zdybanka.Application.Services;
 using Zdybanka.Core;
 using Zdybanka.Core.StorageInterfaces;
@@ -37,12 +39,17 @@ public class Program
         builder.Services.AddScoped<TagService>();
         builder.Services.AddScoped<ChatService>();
         builder.Services.AddScoped<EventService>();
+        builder.Services.AddScoped<MessageService>();
         builder.Services.AddScoped<AuthService>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ITagRepository, TagRepository>();
         builder.Services.AddScoped<IChatRepository, ChatRepository>();
         builder.Services.AddScoped<IEventRepository, EventRepository>();
+        builder.Services.AddScoped<IMessageRepository, MessageRepository>();
         builder.Services.AddScoped<ITokenController, JwtTokenController>();
+        builder.Services.AddMemoryCache();
+
+        builder.Services.AddSignalR();
 
         builder.Services.AddCors(options =>
         {
@@ -64,6 +71,21 @@ public class Program
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes("your_super_secret_key_with_at_least_256_bits_for_security"))
+            };
+            options.Events = new JwtBearerEvents()
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var urlPath = context.Request.Path;
+
+                    if (urlPath.StartsWithSegments("/hubs/chat") && !string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                }
             };
         });
         builder.Services.AddSingleton<IAuthorizationHandler, OwnershipHandler>();
@@ -97,6 +119,7 @@ public class Program
         app.UseAuthorization();
         
         app.MapControllers();
+        app.MapHub<ChatHub>("hubs/chat");
 
         app.Run();
     }

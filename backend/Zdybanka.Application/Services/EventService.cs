@@ -92,13 +92,6 @@ public class EventService(IEventRepository repository, ChatService chatService, 
             newEvent.Tags.Add(tag);
         }
         
-        newEvent.UserEvents.Add(new UserEvent()
-        {
-            JoinedAt = DateTime.Now.ToUniversalTime(),
-            Event = newEvent,
-            UserId = newEvent.CreatorId
-        });
-        
         await _repository.AddEventAsync(newEvent);
         
         await _repository.SaveChangesAsync();
@@ -110,9 +103,10 @@ public class EventService(IEventRepository repository, ChatService chatService, 
             EventId = newEvent.Id,
             Status = ChatStatus.Active
         };
-        chatDto.ParticipantsIds.Add(newEvent.CreatorId);
         
         await _chatService.CreateChat(chatDto);
+        
+        await AddUserToEvent(eventId: newEvent.Id, userId: dto.CreatorId);
         
         return new EventResponse(newEvent);
     }

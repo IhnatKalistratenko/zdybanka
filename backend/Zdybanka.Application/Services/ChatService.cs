@@ -8,7 +8,7 @@ public class ChatService(IChatRepository repository)
 {
     private readonly IChatRepository _repository = repository;
 
-    public async Task<ChatResponse> CreateChat(CreateChatDto dto)
+    public async Task<ChatViewResponse> CreateChat(CreateChatDto dto)
     {
         Chat newChat = new Chat()
         {
@@ -22,17 +22,17 @@ public class ChatService(IChatRepository repository)
 
         await _repository.SaveChangesAsync();
 
-        return new ChatResponse(newChat);
+        return new ChatViewResponse(newChat);
     }
 
-    public async Task<List<ChatResponse>> GetAllChats()
+    public async Task<List<ChatViewResponse>> GetAllChats()
     {
         List<Chat> chats = await _repository.GetChatsAsync();
 
-        return chats.Select(chat => new ChatResponse(chat)).ToList();
+        return chats.Select(chat => new ChatViewResponse(chat)).ToList();
     }
 
-    public async Task<ChatResponse> GetChatById(Guid id)
+    public async Task<ExtendedChatResponse> GetChatById(Guid id, Guid requesterId)
     {
         Chat? dbChat = await _repository.GetChatByIdAsync(id);
         if (dbChat == null)
@@ -40,16 +40,21 @@ public class ChatService(IChatRepository repository)
             throw new KeyNotFoundException($"Chat with id {id} not found");
         }
         
-        return new ChatResponse(dbChat);
+        return new ExtendedChatResponse(dbChat, requesterId);
     }
 
-    public async Task<List<ChatResponse>> GetUserChatsAsync(Guid userId)
+    public Task<bool> IsUserMemberOfChat(Guid chatId, Guid userId)
+    {
+        return _repository.IsUserMemberOfChat(chatId, userId);
+    }
+
+    public async Task<List<ChatViewResponse>> GetUserChatsAsync(Guid userId)
     {
         List<Chat> chats = await _repository.GetUserChatsAsync(userId);
-        return chats.Select(chat => new ChatResponse(chat)).ToList();
+        return chats.Select(chat => new ChatViewResponse(chat)).ToList();
     }
 
-    public async Task<ChatResponse> UpdateChat(Guid id, UpdateChatDto dto)
+    public async Task<ChatViewResponse> UpdateChat(Guid id, UpdateChatDto dto)
     {
         Chat? dbChat = await _repository.GetChatByIdAsync(id);
         if (dbChat == null)
@@ -66,16 +71,11 @@ public class ChatService(IChatRepository repository)
         {
             dbChat.Description = dto.Description;
         }
-
-        if (dto.Status != null)
-        {
-             dbChat.Status = Enum.Parse<ChatStatus>(dto.Status, true);
-        }
         
         _repository.UpdateChat(dbChat);
         await _repository.SaveChangesAsync();
 
-        return new ChatResponse(dbChat);
+        return new ChatViewResponse(dbChat);
     }
 
     public async Task DeleteChat(Guid id)
@@ -97,18 +97,20 @@ public class ChatService(IChatRepository repository)
         {
             throw new KeyNotFoundException();
         }
-        
-        dbChat.UserChats.Add(new UserChat()
+
+        var newUserChat = new UserChat()
         {
             UserId = userId,
-            ChatId = chatId
-        });
+            ChatId = chatId,
+            JoinedAt = DateTime.UtcNow
+        };
 
-        _repository.UpdateChat(dbChat);
+        await _repository.AddUserToChatAsync(newUserChat);
+
         await _repository.SaveChangesAsync();
     }
 
-    public async Task<ChatResponse> GetChatByEventIdAsync(Guid eventId)
+    public async Task<ChatViewResponse> GetChatByEventIdAsync(Guid eventId)
     {
         var chat = await _repository.GetChatByEventIdAsync(eventId);
         if (chat == null)
@@ -116,13 +118,10 @@ public class ChatService(IChatRepository repository)
             throw new KeyNotFoundException();
         }
 
-        return new ChatResponse()
+        return new ChatViewResponse()
         {
             Id = chat.Id,
-            EventId = chat.EventId,
-            Description = chat.Description,
             Name = chat.Name,
-            Status = chat.Status.ToString()
         };
     }
 

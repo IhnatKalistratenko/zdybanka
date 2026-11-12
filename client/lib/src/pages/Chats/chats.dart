@@ -1,22 +1,28 @@
+import 'package:client/src/services/chat_service.dart';
 import 'package:flutter/material.dart';
 
-import 'Chats/chat.dart';
+import '../../models/chat_view.dart';
+import 'chat_page.dart';
 
-class ChatsPage extends StatelessWidget {
+class ChatsPage extends StatefulWidget {
   const ChatsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: Replace with chats loaded from the backend.
-    final chats = [
-      ("Розробка проєкту", "Олег: Скинув оновлений макет..."),
-      ("Університет", "Аня: Завтра пара о 10:00, не забудь!"),
-      ("Гітара", "Данило: Чудово! До завтра!"),
-      ("Міський чат", "Ірина: Хтось знає, що з транспортом..."),
-      ("Кіно та серіали", "Максим: Я подивився перші 2 серії..."),
-      ("Просто поговорити", null),
-    ];
+  State<ChatsPage> createState() => _ChatsPageState();
+}
 
+class _ChatsPageState extends State<ChatsPage> {
+  Future<List<ChatView>>? futureChats;
+
+  @override
+  void initState() {
+    super.initState();
+
+    futureChats = ChatService().getUserChats();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -29,22 +35,53 @@ class ChatsPage extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: chats.length,
-          separatorBuilder: (context, index) => const Divider(
-            height: 1,
-            thickness: 1,
-            color: Color(0xFFE5EAF1),
-          ),
-          itemBuilder: (context, index) {
-            final chat = chats[index];
+        child: FutureBuilder<List<ChatView>>(
+          future: futureChats,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Failed to load your chats. ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
 
-            return ChatCard(
-              chatName: chat.$1,
-              lastChatMessage: chat.$2,
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatPage()));
+            final chats = snapshot.data ?? const <ChatView>[];
+            if (chats.isEmpty) {
+              return const Center(
+                child: Text(
+                  'You have no chats yet.',
+                  style: TextStyle(color: Color(0xFF718096), fontSize: 16),
+                ),
+              );
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: chats.length,
+              separatorBuilder: (context, index) => const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFE5EAF1),
+              ),
+              itemBuilder: (context, index) {
+                final chat = chats[index];
+
+                return ChatCard(
+                  chatName: chat.name,
+                  lastChatMessage: chat.lastMessage?.content,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(chatId: chat.id),
+                      ),
+                    );
+                  },
+                );
               },
             );
           },

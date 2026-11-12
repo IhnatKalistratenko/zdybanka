@@ -1,6 +1,6 @@
 import 'package:client/src/models/login_request.dart';
 import 'package:client/src/pages/Authorization/register.dart';
-import 'package:client/src/pages/events.dart';
+import 'package:client/src/pages/Events/events.dart';
 import 'package:client/src/services/auth_service.dart';
 import 'package:client/src/widgets/error_card.dart';
 import 'package:flutter/gestures.dart';

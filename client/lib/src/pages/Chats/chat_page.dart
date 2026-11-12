@@ -1,10 +1,18 @@
 
+import 'dart:async';
+
+import 'package:client/src/services/signalr_service.dart';
 import 'package:flutter/material.dart';
+import 'package:client/src/models/extended_chat.dart';
+import 'package:client/src/models/message.dart';
+import 'package:client/src/services/chat_service.dart';
 
 import 'edit_chat.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  final String chatId;
+
+  const ChatPage({super.key, required this.chatId});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -12,65 +20,82 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
+  late Future<ExtendedChat> _chatFuture;
+  ExtendedChat? _loadedChat;
+  late StreamSubscription<Message> _messageStream;
+  final SignalrService _signalrService = SignalrService();
+  final List<Message> _liveMessages = [];
+  bool _isSending = false;
 
-  // TODO: Replace with messages loaded from the backend.
-  final List<_Message> _messages = [
-    _Message(
-      author: 'Олег',
-      text: 'Привіт! Як вам новий макет?',
-      time: '16:32',
-    ),
-    _Message(
-      author: 'Я',
-      text: 'Виглядає добре. Можна трохи змінити відступи.',
-      time: '16:45',
-      isMine: true,
-    ),
-    _Message(
-      author: 'Марія',
-      text: 'Згодна. Я теж помітила кілька моментів.',
-      time: '17:10',
-    ),
-    _Message(
-      author: 'Олег',
-      text: 'Добре, тоді внесу зміни сьогодні.',
-      time: '17:15',
-    ),
-    _Message(
-      author: 'Я',
-      text: 'Супер, дякую!',
-      time: '17:20',
-      isMine: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _chatFuture = ChatService().getChatById(widget.chatId);
+    _messageStream = _signalrService.messages.listen((message) {
+      if (!mounted || message.chatId != widget.chatId) return;
+      setState(() {
+        if (!_liveMessages.any((existing) => existing.id == message.id)) {
+          _liveMessages.add(message);
+        }
+      });
+    });
+    unawaited(_connectToChat());
+  }
+
+  Future<void> _connectToChat() async {
+    try {
+      await _chatFuture;
+      if (!mounted) return;
+      await _signalrService.connect();
+      if (!mounted) return;
+      await _signalrService.joinChat(widget.chatId);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Chat connection failed: $error')),
+      );
+    }
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _messageStream.cancel();
+    unawaited(_disconnectFromChat());
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-
-    if (text.isEmpty) return;
-
-    // TODO: Send message to the backend.
-    setState(() {
-      _messages.add(
-        _Message(
-          author: 'Я',
-          text: text,
-          time: TimeOfDay.now().format(context),
-          isMine: true,
-        ),
-      );
-    });
-
-    _messageController.clear();
+  Future<void> _disconnectFromChat() async {
+    try {
+      await _signalrService.leaveChat(widget.chatId);
+    } catch (_) {
+      // The connection may already have been lost while leaving the page.
+    } finally {
+      await _signalrService.dispose();
+    }
   }
 
-  void _showChatDetails() {
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+
+    if (text.isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+    try {
+      await _signalrService.sendMessage(widget.chatId, text);
+      if (mounted) _messageController.clear();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  void _showChatDetails(ExtendedChat chat) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -80,7 +105,28 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
       builder: (context) {
-        return ChatDetailsPopUp(chatName: "Chat name", onEditTap: () {Navigator.of(context).push(MaterialPageRoute(builder: (_) => EditChatPage(initialName: "chat name", initialDescription: "chat description",)));}, participants: ["Maksym", "Olena", "Mykola", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan", "Ivan"], chatDescription: "Description",);
+        return ChatDetailsPopUp(
+          chatName: chat.name,
+          chatDescription: chat.description,
+          onEditTap: () async {
+            final updated = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => EditChatPage(
+                  chatId: chat.id,
+                  initialName: chat.name,
+                  initialDescription: chat.description,
+                ),
+              ),
+            );
+            if (updated == true && mounted) {
+              Navigator.of(context).pop();
+              setState(() {
+                _chatFuture = ChatService().getChatById(widget.chatId);
+              });
+            }
+          },
+          participants: const [],
+        );
       },
     );
   }
@@ -93,54 +139,103 @@ class _ChatPageState extends State<ChatPage> {
         leading: const BackButton(),
         titleSpacing: 0,
         title: InkWell(
-          onTap: _showChatDetails,
+          onTap: () {
+            final chat = _loadedChat;
+            if (chat != null) _showChatDetails(chat);
+          },
           borderRadius: BorderRadius.circular(8),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Розробка проєкту',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF172033),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  '5 members',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF718096),
-                  ),
-                ),
-              ],
+            child: FutureBuilder<ExtendedChat>(
+              future: _chatFuture,
+              builder: (context, snapshot) {
+                final chat = snapshot.data;
+                if (chat != null) _loadedChat = chat;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chat?.name ?? 'Chat',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF172033),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    if (chat != null && chat.description.isNotEmpty)
+                      Text(
+                        chat.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF718096),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Messages
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 20,
+      body: FutureBuilder<ExtendedChat>(
+        future: _chatFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Failed to load chat.',
+                  textAlign: TextAlign.center,
+                ),
               ),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
+            );
+          }
 
-                return _MessageBubble(message: message);
-              },
+          final chat = snapshot.data!;
+          final messages = <Message>[
+            ...chat.messages,
+            ..._liveMessages.where(
+              (live) => !chat.messages.any((loaded) => loaded.id == live.id),
             ),
-          ),
+          ]..sort((left, right) => left.sentAt.compareTo(right.sentAt));
+          return Column(
+            children: [
+              Expanded(
+                child: messages.isEmpty
+                    ? const Center(child: Text('No messages yet.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 20,
+                        ),
+                        itemCount: messages.length * 2,
+                        itemBuilder: (context, index) {
+                          final messageIndex = index ~/ 2;
+                          final message = messages[messageIndex];
+                          final isDateDivider = index.isEven;
+
+                          if (isDateDivider &&
+                              (messageIndex == 0 ||
+                                  !_isSameDay(
+                                    messages[messageIndex - 1].sentAt,
+                                    message.sentAt,
+                                  ))) {
+                            return _MessageDateDivider(date: message.sentAt);
+                          }
+                          if (isDateDivider) return const SizedBox.shrink();
+                          return _MessageBubble(message: message);
+                        },
+                      ),
+              ),
 
           // Message input
           const Divider(height: 1, color: Color(0xFFE5EAF1)),
@@ -178,7 +273,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
-                    onPressed: _sendMessage,
+                    onPressed: _isSending ? null : _sendMessage,
                     style: IconButton.styleFrom(
                       backgroundColor: const Color(0xFF3478F6),
                       foregroundColor: Colors.white,
@@ -191,34 +286,83 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
           ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+bool _isSameDay(DateTime first, DateTime second) {
+  final firstLocal = first.toLocal();
+  final secondLocal = second.toLocal();
+  return firstLocal.year == secondLocal.year &&
+      firstLocal.month == secondLocal.month &&
+      firstLocal.day == secondLocal.day;
+}
+
+class _MessageDateDivider extends StatelessWidget {
+  final DateTime date;
+
+  const _MessageDateDivider({required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    final localDate = date.toLocal();
+    final label =
+        '${localDate.day} ${_monthName(localDate.month)} ${localDate.year}';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: Color(0xFFE5EAF1))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF718096),
+              ),
+            ),
+          ),
+          const Expanded(child: Divider(color: Color(0xFFE5EAF1))),
         ],
       ),
     );
   }
 }
 
-class _Message {
-  final String author;
-  final String text;
-  final String time;
-  final bool isMine;
-
-  const _Message({
-    required this.author,
-    required this.text,
-    required this.time,
-    this.isMine = false,
-  });
-}
+String _monthName(int month) => const [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ][month - 1];
 
 class _MessageBubble extends StatelessWidget {
-  final _Message message;
+  final Message message;
 
   const _MessageBubble({required this.message});
 
   @override
   Widget build(BuildContext context) {
-    final isMine = message.isMine;
+    final isMine = message.isOwner;
+    final sender = isMine ? 'You' : message.senderName;
+    final sentAt = message.sentAt.toLocal();
+    final time =
+        '${sentAt.hour.toString().padLeft(2, '0')}:${sentAt.minute.toString().padLeft(2, '0')}';
 
     return Align(
       alignment: isMine
@@ -238,7 +382,7 @@ class _MessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 5),
                 child: Text(
-                  message.author,
+                  sender,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -267,7 +411,7 @@ class _MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    message.text,
+                    message.content,
                     style: TextStyle(
                       fontSize: 15,
                       height: 1.4,
@@ -278,7 +422,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    message.time,
+                    time,
                     style: TextStyle(
                       fontSize: 11,
                       color: isMine
@@ -388,33 +532,18 @@ class ChatDetailsPopUp extends StatelessWidget {
               ),
               const SizedBox(height: 20),
       
-              // Participants header
-              Text(
-                'Members (${participants.length})',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF172033),
-                ),
-              ),
-      
-              const SizedBox(height: 8),
-      
-              // Participants list
-              if (participants.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'There is no members.',
-                    style: TextStyle(
-                      color: Color(0xFF718096),
-                      fontSize: 14,
-                    ),
+              if (participants.isNotEmpty) ...[
+                Text(
+                  'Members (${participants.length})',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF172033),
                   ),
-                )
-              else
+                ),
+                const SizedBox(height: 8),
                 ...participants.map(
-                      (participant) => Padding(
+                  (participant) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
                       participant,
@@ -425,7 +554,7 @@ class ChatDetailsPopUp extends StatelessWidget {
                     ),
                   ),
                 ),
-      
+              ],
               const SizedBox(height: 8),
             ],
           ),

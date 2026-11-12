@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
 
-import '../models/event.dart';
-import '../models/event_query.dart';
-import '../models/event_tag.dart';
-import '../services/event_service.dart';
-import '../services/tag_service.dart';
-import '../tools.dart';
-import '../widgets/event_card.dart';
-import '../widgets/event_details_widget.dart';
+import '../../models/event.dart';
+import '../../models/event_query.dart';
+import '../../models/event_tag.dart';
+import '../../services/event_service.dart';
+import '../../services/tag_service.dart';
+import '../../tools.dart';
+import '../../widgets/event_card.dart';
+import '../../widgets/event_details_widget.dart';
 
 class EventsPage extends StatefulWidget {
   static final String pageRoute = "/events";

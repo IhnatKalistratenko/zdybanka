@@ -5,6 +5,7 @@ import '../services/auth_aware_http_client.dart';
 
 class ApiRoutes {
   static final String baseUrl = "http://localhost:5071/api";
+  static final String baseSignalrUrl = "http://localhost:5071/hubs/chat";
   static final String loginRoute = "$baseUrl/Auth/login";
   static final String registerRoute = "$baseUrl/User";
   static final String userRoute = "$baseUrl/User/me";
@@ -13,6 +14,9 @@ class ApiRoutes {
   static final String getEventsRoute = "$baseUrl/Event";
   static final String myEventsRoute = "$baseUrl/Event/me";
   static final String getEventsInBounds = "$baseUrl/Event/in-bounds";
+  static final String getUserChats = "$baseUrl/Chat/me";
+  static String getChatById(String chatId) => "$baseUrl/Chat/$chatId";
+  static String updateChat(String chatId) => "$baseUrl/Chat/$chatId";
   static String leaveEventRoute(String eventId) =>
       "$baseUrl/Event/$eventId/leave";
   static String userByIdRoute(String id) => "$baseUrl/User/$id";

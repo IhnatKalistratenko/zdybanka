@@ -1,12 +1,15 @@
 
 import 'package:flutter/material.dart';
+import 'package:client/src/services/chat_service.dart';
 
 class EditChatPage extends StatefulWidget {
+  final String chatId;
   final String initialName;
   final String? initialDescription;
 
   const EditChatPage({
     super.key,
+    required this.chatId,
     required this.initialName,
     this.initialDescription,
   });
@@ -23,6 +26,11 @@ class _EditChatPageState extends State<EditChatPage> {
 
   bool _isSaving = false;
 
+  bool get _hasChanges =>
+      _nameController.text.trim() != widget.initialName.trim() ||
+      _descriptionController.text.trim() !=
+          (widget.initialDescription ?? '').trim();
+
   @override
   void initState() {
     super.initState();
@@ -34,10 +42,16 @@ class _EditChatPageState extends State<EditChatPage> {
     _descriptionController = TextEditingController(
       text: widget.initialDescription ?? '',
     );
+    _nameController.addListener(_onFieldChanged);
+    _descriptionController.addListener(_onFieldChanged);
   }
+
+  void _onFieldChanged() => setState(() {});
 
   @override
   void dispose() {
+    _nameController.removeListener(_onFieldChanged);
+    _descriptionController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -85,23 +99,19 @@ class _EditChatPageState extends State<EditChatPage> {
     });
 
     try {
-      // TODO: Call the chat service here.
-      // Example integration point:
-      // await chatService.updateChat(...);
-      //
-      // Pass the chat identifier and updated values according
-      // to the actual service/API contract.
-
-      // TODO: After a successful service response:
-      // if (!mounted) return;
-      // Navigator.pop(context, updatedChat);
-
+      await ChatService().updateChat(
+        chatId: widget.chatId,
+        name: name,
+        description: description,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Не вдалося зберегти зміни чату.'),
+        SnackBar(
+          content: Text('Не вдалося зберегти зміни чату. $error'),
         ),
       );
     } finally {
@@ -252,7 +262,7 @@ class _EditChatPageState extends State<EditChatPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveChanges,
+                  onPressed: _isSaving || !_hasChanges ? null : _saveChanges,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3478F6),
                     foregroundColor: Colors.white,
