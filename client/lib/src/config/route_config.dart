@@ -1,8 +1,8 @@
 import 'package:client/src/config/storage_config.dart';
 import 'package:client/src/pages/navbar_scaffold.dart';
 import 'package:client/src/pages/Authorization/login.dart';
-import 'package:client/src/pages/chats.dart';
-import 'package:client/src/pages/events.dart';
+import 'package:client/src/pages/Chats/chats.dart';
+import 'package:client/src/pages/Events/events.dart';
 import 'package:client/src/pages/map.dart';
 import 'package:client/src/pages/Profile/profile.dart';
 import 'package:client/src/services/event_service.dart';

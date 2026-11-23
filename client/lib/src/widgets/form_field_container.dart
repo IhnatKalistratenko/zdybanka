@@ -1,4 +1,6 @@
 
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 
 class FormFieldContainer extends StatelessWidget {
@@ -22,16 +24,13 @@ class FormFieldContainer extends StatelessWidget {
       children: [
         RichText(
           text: TextSpan(
-            style: DefaultTextStyle.of(context).style.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
+            style: AppTypography.label.copyWith(letterSpacing: 0.5),
             children: [
-              TextSpan(text: title),
+              TextSpan(text: title, style: AppTypography.caption.copyWith(color: AppColors.onDark)),
               if (required)
                 TextSpan(
                   text: ' *',
-                  style: TextStyle(color: Colors.red.shade400),
+                  style: AppTypography.caption.copyWith(color: AppColors.error),
                 ),
             ],
           ),
@@ -42,9 +41,8 @@ class FormFieldContainer extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             errorText!,
-            style: TextStyle(
+            style: AppTypography.caption.copyWith(
               color: Theme.of(context).colorScheme.error,
-              fontSize: 12,
             ),
           ),
         ],

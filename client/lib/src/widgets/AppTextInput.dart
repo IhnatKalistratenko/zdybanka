@@ -26,7 +26,6 @@ class _AppFormInputState extends State<AppFormInput> {
         maxLines: widget.maxLines,
         maxLength: widget.maxLength,
         decoration: InputDecoration(
-          border: OutlineInputBorder(),
           hintText: widget.inputHintText,
 
         ),

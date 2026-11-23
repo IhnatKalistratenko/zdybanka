@@ -3,7 +3,7 @@
 @TagId = 00000000-0000-0000-0000-000000000002
 @ChatId = 00000000-0000-0000-0000-000000000003
 @EventId = 00000000-0000-0000-0000-000000000004
-@BearerToken = replace-with-token-from-login
+@BearerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImU4MDhjZjBhLWE5OWEtNDMwOS04ZjNhLTVlMGFmYTNmMWM4OSIsIm5iZiI6MTc5NDIyOTgyMiwiZXhwIjoxNzk0MjMzNDIyLCJpc3MiOiJ6ZHliYW5rYS1hcGkifQ.wmqoT1Di-xAgoIkgKQCWWRLGrQnygizdVwwKRzItTj4
 
 ### Health
 GET {{API_HostAddress}}/api/Telemetry/health
@@ -105,7 +105,7 @@ DELETE {{API_HostAddress}}/api/Tag/{{TagId}}
 Accept: application/json
 
 ### List events (requires bearer token; filters are optional)
-GET {{API_HostAddress}}/api/Event?page=1&pageSize=20&status=Active
+GET {{API_HostAddress}}/api/Event?page=1&pageSize=20&status=Active&userLongtitude=25.374316&userLatitude=50.763367&radius=4000
 Accept: application/json
 Authorization: Bearer {{BearerToken}}
 
@@ -157,3 +157,21 @@ Content-Type: application/json
 DELETE {{API_HostAddress}}/api/Event/{{EventId}}
 Accept: application/json
 Authorization: Bearer {{BearerToken}}
+
+### Get user events
+GET {{API_HostAddress}}/api/Event/me
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+
+### Get events in map bounds (requires bearer token)
+GET {{API_HostAddress}}/api/Event/in-bounds
+Accept: application/json
+Authorization: Bearer {{BearerToken}}
+Content-Type: application/json
+
+{
+  "topLeftCornerLongitude": 25.3725,
+  "topLeftCornerLatitude": 50.7635,
+  "bottomRightCornerLongitude": 25.3750,
+  "bottomRightCornerLatitude": 50.7610
+}

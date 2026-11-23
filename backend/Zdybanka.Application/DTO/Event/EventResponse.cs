@@ -1,4 +1,5 @@
 using NetTopologySuite.Geometries;
+using Zdybanka.Application.DTO.Tag;
 
 namespace Zdybanka.Application.DTO.Event;
 
@@ -12,10 +13,14 @@ public record EventResponse
     public Guid CreatorId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; } 
+    public DateTime EndTime { get; set; }
+    public int ParticipantsCount { get; set; }
     public int MaxParticipants { get; set; }
     public double Latitude { get; set; }
-    public double Longtitude { get; set; }
+    public double Longitude { get; set; }
+    public List<TagResponse> Tags { get; set; }
+    public double? DistanceToUser { get; set; }
+    public String UserStatus { get; set; }
 
     public EventResponse(Core.Event domainEvent)
     {
@@ -30,6 +35,12 @@ public record EventResponse
         EndTime = domainEvent.EndTime;
         MaxParticipants = domainEvent.MaxParticipants;
         Latitude = domainEvent.Coordinates.Y;
-        Longtitude = domainEvent.Coordinates.X;
+        Longitude = domainEvent.Coordinates.X;
+        ParticipantsCount = domainEvent.UserEvents.Count;
+        Tags = domainEvent.Tags.Select(tag => new TagResponse
+        {
+            Id = tag.Id,
+            Name = tag.Name
+        }).ToList();
     }
 }

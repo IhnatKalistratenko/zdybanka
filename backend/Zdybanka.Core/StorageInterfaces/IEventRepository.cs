@@ -1,3 +1,4 @@
+using NetTopologySuite.Geometries;
 using Zdybanka.Core.Filters;
 
 namespace Zdybanka.Core.StorageInterfaces;
@@ -11,4 +12,6 @@ public interface IEventRepository
     void RemoveEvent(Event @event);
     Event UpdateEvent(Event @event);
     Task<int> SaveChangesAsync();
+    Task<List<Event>> GetJoinedEvents(Guid userId);
+    Task<List<Event>> GetEventsInBordersAsync(Polygon bounds);
 }

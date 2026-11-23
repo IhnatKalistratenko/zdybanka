@@ -1,13 +1,17 @@
-import 'package:client/src/config/storage_config.dart';
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_colors.dart';
+import 'package:client/src/theme/app_theme.dart';
 import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/pages/Profile/edit_profile.dart';
-import 'package:client/src/pages/events.dart';
 import 'package:client/src/services/auth_service.dart';
+import 'package:client/src/services/event_service.dart';
 import 'package:client/src/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/event.dart';
 import '../../models/user.dart';
 import '../../widgets/event_card.dart';
+import '../../widgets/event_details_widget.dart';
 
 class ProfilePage extends StatefulWidget {
   static final String pageRoute = "/profile";
@@ -20,12 +24,21 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
 
   late Future<User> futureUser;
+  late Future<List<Event>> futureEvents;
 
   @override
   void initState() {
     super.initState();
 
     futureUser = UserService().getUser();
+    futureEvents = EventService().getMyEvents();
+  }
+
+  void _reloadEvents() {
+    if (!mounted) return;
+    setState(() {
+      futureEvents = EventService().getMyEvents();
+    });
   }
 
   Future<void> onExitClick() async {
@@ -60,11 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               Text(
                                 snapshot.data!.username,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  letterSpacing: 1.5,
-                                ),
+                                style: AppTypography.title.copyWith(letterSpacing: 1.5),
                               ),
                               OutlinedButton.icon(
                                 label: Text("Exit"),
@@ -72,17 +81,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: ButtonStyle(
                                   shape: WidgetStatePropertyAll(
                                     RoundedRectangleBorder(
-                                      borderRadius: BorderRadiusGeometry.circular(8.0),
+                                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                                     ),
                                   ),
                                   side: WidgetStatePropertyAll(
-                                    BorderSide(color: Colors.red[400]!),
+                                    BorderSide(color: AppColors.error),
                                   ),
                                   foregroundColor: WidgetStatePropertyAll(
-                                    Colors.red[400],
+                                    AppColors.error,
                                   ),
                                 ),
-                                icon: Icon(Icons.exit_to_app, color: Colors.red[400]),
+                                icon: Icon(Icons.exit_to_app, color: AppColors.error),
                               ),
                             ],
                           ),
@@ -108,13 +117,37 @@ class _ProfilePageState extends State<ProfilePage> {
                             EventsList(
                               title: "My events",
                               icon: Icon(Icons.calendar_month),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'created')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => OwnedEventDetailsWidget(
+                                eventId: id,
+                                onDeleteCallback: _reloadEvents,
+                              ),
                             ),
                             SizedBox(height: 10),
                             EventsList(title: "Joined events",
-                              icon: Icon(Icons.people),),
+                              icon: Icon(Icons.people),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'joined')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
+                                eventId: id,
+                                onLeaveCallback: _reloadEvents,
+                              ),),
                             SizedBox(height: 10),
                             EventsList(title: "Past events",
-                              icon: Icon(Icons.update),),
+                              icon: Icon(Icons.update),
+                              eventsFuture: futureEvents,
+                              selectEvents: (events) => events
+                                  .where((event) => event.userStatus.toLowerCase() == 'past')
+                                  .toList(),
+                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
+                                eventId: id,
+                                onLeaveCallback: _reloadEvents,
+                              ),),
                           ],
                         )
                     ),
@@ -136,7 +169,10 @@ class _ProfilePageState extends State<ProfilePage> {
 class EventsList extends StatefulWidget {
   final String title;
   final Icon icon;
-  const EventsList({super.key, required this.title, required this.icon});
+  final Future<List<Event>> eventsFuture;
+  final List<Event> Function(List<Event>) selectEvents;
+  final Widget Function(String) detailsWidgetBuilder;
+  const EventsList({super.key, required this.title, required this.icon, required this.eventsFuture, required this.selectEvents, required this.detailsWidgetBuilder});
 
   @override
   State<EventsList> createState() => _EventsListState();
@@ -147,32 +183,65 @@ class _EventsListState extends State<EventsList> {
   Widget build(BuildContext context) {
     return ExpansionTile(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
       collapsedShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
-      collapsedBackgroundColor: Colors.white,
-      backgroundColor: Colors.white,
+      collapsedBackgroundColor: AppColors.surface,
+      backgroundColor: AppColors.surface,
       title: RichText(
         text: TextSpan(
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.3),
+          style: AppTypography.titleMedium.copyWith(letterSpacing: 1.3),
           children: [
             WidgetSpan(child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
               child: widget.icon,
             )),
             TextSpan(
-                text: widget.title
+                text: widget.title,
+              style: AppTypography.title.copyWith(color: AppColors.onDark)
             )
           ],
         ),
       ),
       children: [
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
-        EventCard(trailing: EventArrowTrailing(), event: mockEvents[0], onTap: () {  },),
+        FutureBuilder<List<Event>>(
+          future: widget.eventsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Could not load events: ${snapshot.error}'),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              );
+            }
+            final events = widget.selectEvents(snapshot.data!);
+            if (events.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No events found.'),
+              );
+            }
+            return Column(
+              children: events.map<Widget>((event) => EventCard(
+                trailing: const EventArrowTrailing(),
+                event: event,
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => widget.detailsWidgetBuilder(event.id),
+                ),
+              )).toList(),
+            );
+          },
+        ),
       ],
     );
   }

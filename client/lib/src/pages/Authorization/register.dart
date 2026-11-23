@@ -1,4 +1,5 @@
 
+import 'package:client/src/theme/app_typography.dart';
 import 'package:client/src/models/register_request.dart';
 import 'package:client/src/services/auth_service.dart';
 import 'package:client/src/widgets/error_card.dart';
@@ -105,10 +106,7 @@ class _RegisterFormState extends State<RegisterForm> {
           const Center(
             child: Text(
               "Register",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 40,
-              ),
+              style: AppTypography.headingLarge,
             ),
           ),
           const SizedBox(height: 30),
@@ -124,7 +122,6 @@ class _RegisterFormState extends State<RegisterForm> {
               return null;
             },
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               hintText: "Enter your username",
             ),
           ),
@@ -143,7 +140,6 @@ class _RegisterFormState extends State<RegisterForm> {
               return null;
             },
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               hintText: "Enter your password",
             ),
           ),
@@ -160,9 +156,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   onPressed: _isSubmitting ? null : register,
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    textStyle: AppTypography.button,
                   ),
                   child: _isSubmitting
                       ? const SizedBox(

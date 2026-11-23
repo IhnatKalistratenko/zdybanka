@@ -10,4 +10,7 @@ public interface IChatRepository
     void RemoveChat(Chat chat);
     Task<int> SaveChangesAsync();
     Chat UpdateChat(Chat chat);
+    Task<Chat?> GetChatByEventIdAsync(Guid eventId);
+    Task AddUserToChatAsync(UserChat userChat);
+    Task<bool> IsUserMemberOfChat(Guid chatId, Guid userId);
 }

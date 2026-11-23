@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:client/src/config/http_config.dart';
 import 'package:client/src/config/storage_config.dart';
 import 'package:client/src/models/register_request.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/login_request.dart';
@@ -37,9 +36,41 @@ class AuthService
       throw AuthServiceException(message: data["error"]);
     }
 
-    final storage = FlutterSecureStorage();
+    final token = data["token"] as String;
+    await secureStorage.write(key: "token", value: token);
 
-    await storage.write(key: "token", value: data["token"] as String);
+    final userId = _userIdFromToken(token);
+    if (userId == null) {
+      await secureStorage.delete(key: userIdStorageKey);
+    } else {
+      await secureStorage.write(key: userIdStorageKey, value: userId);
+    }
+  }
+
+  String? _userIdFromToken(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) return null;
+
+    try {
+      final payloadBytes = base64Url.decode(base64Url.normalize(parts[1]));
+      final payload = jsonDecode(utf8.decode(payloadBytes));
+      if (payload is! Map) return null;
+
+      const nameIdentifierClaim =
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier';
+      final claim = payload[nameIdentifierClaim] ??
+          payload['nameid'] ??
+          payload['sub'] ??
+          payload['user_id'] ??
+          payload['userId'];
+
+      if (claim is String && claim.trim().isNotEmpty) return claim;
+      return null;
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
   }
 
 
@@ -77,8 +108,9 @@ class AuthService
     throw AuthServiceException(message: message);
   }
 
-  Future<void> logout() {
-    return secureStorage.delete(key: "token");
+  Future<void> logout() async {
+    await secureStorage.delete(key: "token");
+    await secureStorage.delete(key: userIdStorageKey);
   }
 
 }

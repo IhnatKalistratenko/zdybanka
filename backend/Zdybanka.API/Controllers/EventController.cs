@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Authorization;
 using Zdybanka.Application.DTO;
 using Zdybanka.Application.DTO.Event;
 using Zdybanka.Application.Services;
+using Zdybanka.Core;
 using Zdybanka.Core.Filters;
+using Zdybanka.Core.Models;
 
 namespace Zdybanka.API.Controllers;
 
@@ -21,7 +23,21 @@ public class EventController(EventService eventService, IAuthorizationService au
     {
         try
         {
+            var userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                return Forbid();
+            }
+
+            filter.UserId = userId;
+            
             List<EventResponse> events = await _eventService.GetEvents(filter);
+
+            foreach (var @event in events)
+            {
+                UserEventStatus status = await _eventService.DetermineUserStatus(@event.Id, userId);
+                @event.UserStatus = status.ToString();
+            }
             
             return Ok(events);
         }
@@ -37,7 +53,15 @@ public class EventController(EventService eventService, IAuthorizationService au
     {
         try
         {
+            string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                return Unauthorized();
+            }
             EventResponse @event = await _eventService.GetEventById(id);
+            UserEventStatus status = await _eventService.DetermineUserStatus(eventId: @event.Id, userId); 
+            @event.UserStatus = status.ToString();
             
             return Ok(@event);
         }
@@ -100,7 +124,7 @@ public class EventController(EventService eventService, IAuthorizationService au
 
     [HttpDelete("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> DeleteChat([FromRoute] Guid id)
+    public async Task<IActionResult> DeleteEvent([FromRoute] Guid id)
     {
         try
         {
@@ -118,6 +142,127 @@ public class EventController(EventService eventService, IAuthorizationService au
         catch (KeyNotFoundException e)
         {
             return NotFound();
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetUserEvents()
+    {
+        try
+        {
+            var idString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (idString == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!Guid.TryParse(idString, out Guid userId))
+            {
+                return Unauthorized();
+            }
+
+            var createdEvents = await _eventService.GetEvents(new EventFilter()
+            {
+                CreatorId = userId
+            });
+            var joinedEvents = await _eventService.GetJoinedEvents(userId);
+            var events = createdEvents
+                .Concat(joinedEvents)
+                .ToList();
+
+            foreach (var @event in events)
+            {
+                UserEventStatus status = await _eventService.DetermineUserStatus(@event.Id, userId);
+                @event.UserStatus = status.ToString();
+            }
+
+            return Ok(events);
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [HttpPost("{eventId:guid}/join")]
+    public async Task<IActionResult> JoinEvent([FromRoute] Guid eventId)
+    {
+        try
+        {
+            String userIdString = User.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                return Unauthorized();
+            }
+
+            await _eventService.AddUserToEvent(eventId, userId);
+
+            return Ok();
+        }
+        catch (KeyNotFoundException e)
+        {
+            return BadRequest(new ErrorResponse()
+            {
+                Code = ErrorCodes.NotFound,
+                Error = e.Message
+            });
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500);
+        }
+    }
+
+    [HttpPost("{eventId:guid}/leave")]
+    [Authorize]
+    public async Task<IActionResult> LeaveEvent([FromRoute] Guid eventId)
+    {
+        try
+        {
+            string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                return Unauthorized();
+            }
+
+            await _eventService.DeleteUserFromEvent(eventId, userId);
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500);
+        }
+    }
+
+    [Authorize]
+    [HttpGet("in-bounds")]
+    public async Task<IActionResult> GetEventsInBounds([FromHeader] EventBounds bounds)
+    {
+        try
+        {
+            string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (!Guid.TryParse(userIdString, out Guid userId))
+            {
+                return Unauthorized();
+            }
+            var result = await _eventService.GetEventInBounds(bounds);
+
+            foreach (var @event in result)
+            {
+                UserEventStatus status = await _eventService.DetermineUserStatus(@event.Id, userId);
+                @event.UserStatus = status.ToString();
+            }
+
+            return Ok(result);
         }
         catch (Exception e)
         {

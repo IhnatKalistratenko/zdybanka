@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:client/src/theme/app_typography.dart';
+import 'package:client/src/theme/app_colors.dart';
 import 'package:client/src/services/user_service.dart';
 import 'package:client/src/widgets/error_card.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +25,7 @@ class _EditProfileState extends State<EditProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Edit profile"), elevation: 0.7),
+      appBar: AppBar(title: Text("Edit profile")),
       body: FutureBuilder<User>(
         future: futureUser,
         builder: (context, snapshot) {
@@ -48,7 +50,7 @@ class _EditProfileState extends State<EditProfile> {
                 children: [
                   const Text(
                     "Edit profile",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                    style: AppTypography.headingSmall,
                   ),
                   const Text("Manage your account settings"),
                   const Padding(
@@ -148,12 +150,12 @@ class _UsernameFormState extends State<UsernameForm> {
       children: [
         Text(
           "Username",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: AppTypography.title,
         ),
         SizedBox(height: 5),
         Text("Change the name displayed on your profile."),
         SizedBox(height: 5),
-        Text("Username", style: TextStyle(fontWeight: FontWeight.bold)),
+        Text("Username", style: AppTypography.label),
         SizedBox(height: 5),
         Form(
           key: _formKey,
@@ -161,7 +163,7 @@ class _UsernameFormState extends State<UsernameForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+                decoration: const InputDecoration(),
                 controller: _usernameController,
                 onChanged: (_) => setState(() {
                   _errorMessage = null;
@@ -290,7 +292,7 @@ class _PasswordFormState extends State<PasswordForm> {
       children: [
         Text(
           "Password",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: AppTypography.title,
         ),
         SizedBox(height: 5),
         Text("Enter your current password and choose a new one."),
@@ -302,7 +304,6 @@ class _PasswordFormState extends State<PasswordForm> {
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: "Current password",
-                  border: OutlineInputBorder(),
                 ),
                 controller: _currentPasswordController,
                 obscureText: true,
@@ -315,7 +316,6 @@ class _PasswordFormState extends State<PasswordForm> {
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: "New password",
-                  border: OutlineInputBorder(),
                 ),
                 controller: _newPasswordController,
                 obscureText: true,
@@ -378,7 +378,7 @@ class SuccessCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Card(
-        color: Colors.green[400],
+        color: AppColors.success,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
           child: Column(
@@ -388,7 +388,7 @@ class SuccessCard extends StatelessWidget {
                 children: [
                   Icon(Icons.info),
                   SizedBox(width: 5,),
-                  Text("Success", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17,))
+                  Text("Success", style: AppTypography.titleMedium)
                 ],
               ),
               Row(
