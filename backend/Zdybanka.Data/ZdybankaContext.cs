@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Zdybanka.Core;
 using Zdybanka.Core.Models;
 using Zdybanka.Data.DTO;
+using Zdybanka.Data.Configurations;
 
 namespace Zdybanka.Data;
 
@@ -30,6 +31,7 @@ public partial class ZdybankaContext : DbContext
 
     public virtual DbSet<UserEvent> UserEvents { get; set; }
     public virtual DbSet<Message> Messages { get; set; }
+    public virtual DbSet<IdempotencyKey> IdempotencyKeys { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +43,8 @@ public partial class ZdybankaContext : DbContext
 
         modelBuilder.HasDbFunction(() => GetEventsByDistance(default, default)).HasName("nearby_events");
         modelBuilder.HasDbFunction(() => GetEventsInBorders(default, default, default, default)).HasName("events_in_borders");
+
+        modelBuilder.ApplyConfiguration(new IdempotencyKeyConfiguration());
         
         modelBuilder.Entity<Chat>(entity =>
         {

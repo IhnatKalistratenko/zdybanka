@@ -10,23 +10,25 @@ import 'package:http/http.dart' as http;
 
 import '../config/storage_config.dart';
 import '../services/auth_aware_http_client.dart';
+import '../services/api_client.dart';
 import '../models/create_event_request.dart';
 
-class EventServiceException implements Exception {
-  final String message;
-  final int? statusCode;
-
-  const EventServiceException(this.message, {this.statusCode});
-
-  @override
-  String toString() => message;
+class EventServiceException extends ApiException {
+  const EventServiceException(String message, {int? statusCode})
+    : super(
+        message: message,
+        code: statusCode == null ? 'event_error' : 'http_error',
+        statusCode: statusCode,
+      );
 }
 
 class EventService {
-  final http.Client _client;
+  final ApiClient _client;
 
   EventService({http.Client? client})
-    : _client = client == null ? httpClient : AuthAwareHttpClient(client);
+    : _client = client == null
+          ? apiClient
+          : ApiClient(client: AuthAwareHttpClient(client));
 
   Future<String> checkForAuthorize() async {
     final token = await secureStorage.read(key: "token");
@@ -40,17 +42,15 @@ class EventService {
   Future<void> createEvent(CreateEventRequest request) async {
     final token = await checkForAuthorize();
 
-    final response = await _client
-        .post(
-          Uri.parse(ApiRoutes.createEventRoute),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-          body: jsonEncode(request.toJson()),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.post(
+      Uri.parse(ApiRoutes.createEventRoute),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
@@ -64,7 +64,7 @@ class EventService {
     }
 
     try {
-      final body = jsonDecode(responseBody);
+      final body = apiClient.decodeJson(responseBody);
 
       if (body is Map) {
         for (final key in ['error', 'message', 'title', 'detail']) {
@@ -86,15 +86,10 @@ class EventService {
 
   Future<void> deleteEvent(String eventId) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .delete(
-          Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.delete(
+      Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw EventServiceException(
@@ -106,15 +101,10 @@ class EventService {
 
   Future<void> joinEvent(String eventId) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .post(
-          Uri.parse('${ApiRoutes.createEventRoute}/$eventId/join'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.post(
+      Uri.parse('${ApiRoutes.createEventRoute}/$eventId/join'),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
@@ -123,7 +113,7 @@ class EventService {
     final body = utf8.decode(response.bodyBytes).trim();
     var message = 'Failed to join event.';
     try {
-      final data = jsonDecode(body);
+      final data = apiClient.decodeJson(body);
       if (data is Map) {
         for (final key in ['error', 'message', 'title', 'detail']) {
           final value = data[key];
@@ -144,15 +134,10 @@ class EventService {
 
   Future<void> leaveEvent(String eventId) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .post(
-          Uri.parse(ApiRoutes.leaveEventRoute(eventId)),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.post(
+      Uri.parse(ApiRoutes.leaveEventRoute(eventId)),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
@@ -161,7 +146,7 @@ class EventService {
     final body = utf8.decode(response.bodyBytes).trim();
     var message = 'Failed to leave event.';
     try {
-      final data = jsonDecode(body);
+      final data = apiClient.decodeJson(body);
       if (data is Map) {
         for (final key in ['error', 'message', 'title', 'detail']) {
           final value = data[key];
@@ -182,15 +167,10 @@ class EventService {
 
   Future<Event> getEventById(String eventId) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .get(
-          Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.get(
+      Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw EventServiceException(
@@ -200,7 +180,7 @@ class EventService {
     }
 
     try {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = apiClient.decodeJson(utf8.decode(response.bodyBytes));
       if (data is! Map<String, dynamic>) {
         throw const FormatException('Invalid event response.');
       }
@@ -212,34 +192,32 @@ class EventService {
 
   Future<void> updateEvent(String eventId, CreateEventRequest request) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .put(
-          Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'name': request.name,
-            'description': request.description,
-            'address': request.address,
-            'status': 'Active',
-            'startTime': request.startTime.toUtc().toIso8601String(),
-            'endTime': request.endTime.toUtc().toIso8601String(),
-            'maxParticipants': request.maxParticipants,
-            'latitude': request.latitude,
-            'longitude': request.longitude,
-            'tagIds': request.tagIds
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.put(
+      Uri.parse('${ApiRoutes.createEventRoute}/$eventId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'name': request.name,
+        'description': request.description,
+        'address': request.address,
+        'status': 'Active',
+        'startTime': request.startTime.toUtc().toIso8601String(),
+        'endTime': request.endTime.toUtc().toIso8601String(),
+        'maxParticipants': request.maxParticipants,
+        'latitude': request.latitude,
+        'longitude': request.longitude,
+        'tagIds': request.tagIds,
+      }),
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = utf8.decode(response.bodyBytes).trim();
       var message = 'Failed to update event.';
       try {
-        final data = jsonDecode(body);
+        final data = apiClient.decodeJson(body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -266,7 +244,7 @@ class EventService {
     if (response.statusCode != 200) {
       String errorMessage = 'Failed to load events.';
       try {
-        final data = jsonDecode(response.body);
+        final data = apiClient.decodeJson(response.body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -290,7 +268,7 @@ class EventService {
     }
 
     try {
-      final data = jsonDecode(response.body);
+      final data = apiClient.decodeJson(response.body);
       if (data is! List) {
         throw const FormatException('Invalid events response.');
       }
@@ -308,21 +286,16 @@ class EventService {
 
   Future<List<Event>> getMyEvents() async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .get(
-          Uri.parse(ApiRoutes.myEventsRoute),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.get(
+      Uri.parse(ApiRoutes.myEventsRoute),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = utf8.decode(response.bodyBytes).trim();
       var message = 'Failed to load your events.';
       try {
-        final data = jsonDecode(body);
+        final data = apiClient.decodeJson(body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -339,7 +312,7 @@ class EventService {
     }
 
     try {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = apiClient.decodeJson(utf8.decode(response.bodyBytes));
       debugPrint("Received data: $data");
       if (data is! List) {
         throw const FormatException('Expected a list of events.');
@@ -361,23 +334,21 @@ class EventService {
     EventBoundaryRequest query,
   ) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .get(
-          Uri.parse(ApiRoutes.buildGetEventsInBoundaries(query)),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.get(
+      Uri.parse(ApiRoutes.buildGetEventsInBoundaries(query)),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
     final body = utf8.decode(response.bodyBytes);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       var message = 'Failed to load events in bounds.';
       try {
-        final data = jsonDecode(body);
+        final data = apiClient.decodeJson(body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -396,7 +367,7 @@ class EventService {
     }
 
     try {
-      final data = jsonDecode(body);
+      final data = apiClient.decodeJson(body);
       if (data is! List) {
         throw const FormatException('Invalid events in bounds response.');
       }

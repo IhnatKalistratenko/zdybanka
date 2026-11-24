@@ -17,4 +17,5 @@ public static class ErrorCodes
     public const string InvalidArgument = "INVALID_ARGUMENT";
     public const string ServerError = "SERVER_ERROR";
     public const string NotFound = "NOT_FOUND";
+    public const string RetryAfter = "RETRY_AFTER";
 }

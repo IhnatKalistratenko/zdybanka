@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Zdybanka.Application.DTO;
@@ -12,10 +13,11 @@ namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/{controller}")]
-public class EventController(EventService eventService, IAuthorizationService authorizationService) : Controller
+public class EventController(EventService eventService, IAuthorizationService authorizationService, IdempotencyService idempotencyService) : Controller
 {
     private readonly EventService _eventService = eventService;
     private readonly IAuthorizationService _authorizationService = authorizationService;
+    private readonly IdempotencyService _idempotencyService = idempotencyService;
     
     [Authorize]
     [HttpGet("")]
@@ -63,7 +65,27 @@ public class EventController(EventService eventService, IAuthorizationService au
     [HttpPost("")]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto, [FromHeader] string authorization)
     {
-        
+        if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Message = "A valid Idempotency-Key GUID header is required.",
+                Code = ErrorCodes.InvalidArgument,
+                RequestId = HttpContext.TraceIdentifier
+            });
+        }
+
+        var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+        if (previousResponse is not null)
+        {
+            return new ContentResult
+            {
+                Content = previousResponse,
+                ContentType = "application/json",
+                StatusCode = StatusCodes.Status201Created
+            };
+        }
+
             string? userId = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userId, out Guid id))
@@ -74,6 +96,8 @@ public class EventController(EventService eventService, IAuthorizationService au
             dto.CreatorId = id;
             
             EventResponse response = await _eventService.CreateEvent(dto);
+            var responseBody = JsonSerializer.Serialize(response, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            await _idempotencyService.SaveResponseAsync(key.ToString(), responseBody);
             return CreatedAtAction(nameof(GetEvent), new { id = response.Id }, response);
         }
 
@@ -149,7 +173,19 @@ public class EventController(EventService eventService, IAuthorizationService au
     [HttpPost("{eventId:guid}/join")]
     public async Task<IActionResult> JoinEvent([FromRoute] Guid eventId)
     {
-        
+            if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Message = "A valid Idempotency-Key GUID header is required.",
+                    Code = ErrorCodes.InvalidArgument,
+                    RequestId = HttpContext.TraceIdentifier
+                });
+            }
+
+            var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+            if (previousResponse is not null) return Ok();
+
             String userIdString = User.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
             if (!Guid.TryParse(userIdString, out Guid userId))
             {
@@ -158,6 +194,7 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             await _eventService.AddUserToEvent(eventId, userId);
 
+            await _idempotencyService.SaveResponseAsync(key.ToString(), string.Empty);
             return Ok();
         }
 
@@ -165,7 +202,19 @@ public class EventController(EventService eventService, IAuthorizationService au
     [Authorize]
     public async Task<IActionResult> LeaveEvent([FromRoute] Guid eventId)
     {
-        
+            if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Message = "A valid Idempotency-Key GUID header is required.",
+                    Code = ErrorCodes.InvalidArgument,
+                    RequestId = HttpContext.TraceIdentifier
+                });
+            }
+
+            var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+            if (previousResponse is not null) return NoContent();
+
             string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userIdString, out Guid userId))
@@ -175,6 +224,7 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             await _eventService.DeleteUserFromEvent(eventId, userId);
 
+            await _idempotencyService.SaveResponseAsync(key.ToString(), string.Empty);
             return NoContent();
         }
 

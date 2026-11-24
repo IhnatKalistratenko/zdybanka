@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zdybanka.Application.DTO;
@@ -11,10 +12,11 @@ namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UserController(UserService userService, ITokenController tokenController) : Controller
+public class UserController(UserService userService, ITokenController tokenController, IdempotencyService idempotencyService) : Controller
 {
     private readonly UserService _userService = userService;
     private readonly ITokenController _tokenController = tokenController;
+    private readonly IdempotencyService _idempotencyService = idempotencyService;
 
     [HttpGet("")]
     public async Task<IActionResult> GetUsers()
@@ -35,10 +37,32 @@ public class UserController(UserService userService, ITokenController tokenContr
     [HttpPost("")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest dto)
     {
-        
-            UserResponse user = await _userService.CreateUserAsync(dto);
-            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+        if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Message = "A valid Idempotency-Key GUID header is required.",
+                Code = ErrorCodes.InvalidArgument,
+                RequestId = HttpContext.TraceIdentifier
+            });
         }
+
+        var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+        if (previousResponse is not null)
+        {
+            return new ContentResult
+            {
+                Content = previousResponse,
+                ContentType = "application/json",
+                StatusCode = StatusCodes.Status201Created
+            };
+        }
+
+        UserResponse user = await _userService.CreateUserAsync(dto);
+        var response = JsonSerializer.Serialize(user, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        await _idempotencyService.SaveResponseAsync(key.ToString(), response);
+        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+    }
     
     [Authorize]
     [HttpPatch("{id}")]

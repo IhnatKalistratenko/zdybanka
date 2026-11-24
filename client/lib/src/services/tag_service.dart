@@ -1,30 +1,23 @@
-import 'dart:convert';
-
 import 'package:client/src/config/http_config.dart';
 import 'package:client/src/models/event_tag.dart';
+import 'package:client/src/services/api_client.dart';
 
-class TagServiceException implements Exception {
-  final String message;
-
-  TagServiceException({required this.message});
-
-  @override
-  String toString() => message;
+class TagServiceException extends ApiException {
+  TagServiceException({required String message})
+    : super(message: message, code: 'tag_error');
 }
 
 class TagService {
   Future<List<EventTag>> getTags() async {
-    final response = await httpClient
-        .get(
-          Uri.parse(ApiRoutes.tagsRoute),
-          headers: const {'Accept': 'application/json'},
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await apiClient.get(
+      Uri.parse(ApiRoutes.tagsRoute),
+      headers: const {'Accept': 'application/json'},
+    );
 
     if (response.statusCode != 200) {
       var message = 'Failed to load tags.';
       try {
-        final body = jsonDecode(response.body);
+        final body = apiClient.decodeJson(response.body);
         if (body is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = body[key];
@@ -45,7 +38,7 @@ class TagService {
     }
 
     try {
-      final data = jsonDecode(response.body);
+      final data = apiClient.decodeJson(response.body);
       if (data is! List) {
         throw const FormatException('Invalid tags response.');
       }

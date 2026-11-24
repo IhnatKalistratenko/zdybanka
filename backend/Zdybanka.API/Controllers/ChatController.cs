@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Zdybanka.Application.DTO;
 using Zdybanka.Application.DTO.Chat;
 using Zdybanka.Application.Services;
 
@@ -8,9 +10,10 @@ namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ChatController(ChatService chatService) : Controller
+public class ChatController(ChatService chatService, IdempotencyService idempotencyService) : Controller
 {
     private readonly ChatService _chatService = chatService;
+    private readonly IdempotencyService _idempotencyService = idempotencyService;
 
     private Guid CheckUserAuthorization()
     {
@@ -71,9 +74,25 @@ public class ChatController(ChatService chatService) : Controller
     [HttpPost("{id:guid}")]
     public async Task<IActionResult> UpdateChat([FromRoute] Guid id, [FromBody] UpdateChatDto dto)
     {
-        
-            ChatViewResponse viewResponse = await _chatService.UpdateChat(id, dto);
-
-            return Ok(viewResponse);
+        if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Message = "A valid Idempotency-Key GUID header is required.",
+                Code = ErrorCodes.InvalidArgument,
+                RequestId = HttpContext.TraceIdentifier
+            });
         }
+
+        var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+        if (previousResponse is not null)
+        {
+            return Content(previousResponse, "application/json");
+        }
+
+        ChatViewResponse viewResponse = await _chatService.UpdateChat(id, dto);
+        var response = JsonSerializer.Serialize(viewResponse, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        await _idempotencyService.SaveResponseAsync(key.ToString(), response);
+        return Ok(viewResponse);
+    }
 }

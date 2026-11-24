@@ -1,4 +1,4 @@
-@API_HostAddress = http://localhost:5071
+@API_HostAddress = http://192.168.43.113:5000
 @UserId = 00000000-0000-0000-0000-000000000001
 @TagId = 00000000-0000-0000-0000-000000000002
 @ChatId = 00000000-0000-0000-0000-000000000003
@@ -32,9 +32,10 @@ POST {{API_HostAddress}}/api/User
 Accept: application/json
 Content-Type: application/json
 
+
 {
-  "username": "testUser",
-  "password": "test"
+  "username": "idempotent",
+  "password": "idempotent"
 }
 
 ### Update user (requires bearer token)
