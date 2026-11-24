@@ -21,8 +21,7 @@ public class EventController(EventService eventService, IAuthorizationService au
     [HttpGet("")]
     public async Task<IActionResult> GetEvents([FromQuery] EventFilter filter)
     {
-        try
-        {
+        
             var userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(userIdString, out Guid userId))
             {
@@ -41,18 +40,12 @@ public class EventController(EventService eventService, IAuthorizationService au
             
             return Ok(events);
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
     
     [Authorize]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEvent([FromRoute] Guid id)
     {
-        try
-        {
+        
             string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userIdString, out Guid userId))
@@ -65,18 +58,12 @@ public class EventController(EventService eventService, IAuthorizationService au
             
             return Ok(@event);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound();
-        }
-    }
 
     [Authorize]
     [HttpPost("")]
     public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto, [FromHeader] string authorization)
     {
-        try
-        {
+        
             string? userId = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userId, out Guid id))
@@ -89,18 +76,12 @@ public class EventController(EventService eventService, IAuthorizationService au
             EventResponse response = await _eventService.CreateEvent(dto);
             return CreatedAtAction(nameof(GetEvent), new { id = response.Id }, response);
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [HttpPut("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> UpdateEvent([FromRoute] Guid id, [FromBody] UpdateEventDto dto)
     {
-        try
-        {
+        
             EventResponse existingEvent = await _eventService.GetEventById(id);
             AuthorizationResult authorizationResult = await _authorizationService.AuthorizeAsync(
                 User, existingEvent.CreatorId, "Ownership");
@@ -112,22 +93,12 @@ public class EventController(EventService eventService, IAuthorizationService au
             EventResponse response = await _eventService.UpdateEvent(id, dto);
             return Ok(response);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound();
-        }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [HttpDelete("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> DeleteEvent([FromRoute] Guid id)
     {
-        try
-        {
+        
             EventResponse existingEvent = await _eventService.GetEventById(id);
             AuthorizationResult authorizationResult = await _authorizationService.AuthorizeAsync(
                 User, existingEvent.CreatorId, "Ownership");
@@ -139,22 +110,12 @@ public class EventController(EventService eventService, IAuthorizationService au
             await _eventService.DeleteEvent(id);
             return NoContent();
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound();
-        }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetUserEvents()
     {
-        try
-        {
+        
             var idString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
             if (idString == null)
             {
@@ -183,18 +144,12 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             return Ok(events);
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [Authorize]
     [HttpPost("{eventId:guid}/join")]
     public async Task<IActionResult> JoinEvent([FromRoute] Guid eventId)
     {
-        try
-        {
+        
             String userIdString = User.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
             if (!Guid.TryParse(userIdString, out Guid userId))
             {
@@ -205,26 +160,12 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             return Ok();
         }
-        catch (KeyNotFoundException e)
-        {
-            return BadRequest(new ErrorResponse()
-            {
-                Code = ErrorCodes.NotFound,
-                Error = e.Message
-            });
-        }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [HttpPost("{eventId:guid}/leave")]
     [Authorize]
     public async Task<IActionResult> LeaveEvent([FromRoute] Guid eventId)
     {
-        try
-        {
+        
             string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userIdString, out Guid userId))
@@ -236,18 +177,12 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             return NoContent();
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [Authorize]
     [HttpGet("in-bounds")]
     public async Task<IActionResult> GetEventsInBounds([FromHeader] EventBounds bounds)
     {
-        try
-        {
+        
             string? userIdString = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (!Guid.TryParse(userIdString, out Guid userId))
@@ -264,9 +199,4 @@ public class EventController(EventService eventService, IAuthorizationService au
 
             return Ok(result);
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 }

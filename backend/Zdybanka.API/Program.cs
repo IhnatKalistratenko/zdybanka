@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Zdybanka.API.Middlewares;
 using Zdybanka.API.Hubs;
 using Zdybanka.Application.Services;
 using Zdybanka.Core;
@@ -49,6 +50,7 @@ public class Program
         builder.Services.AddScoped<IEventRepository, EventRepository>();
         builder.Services.AddScoped<IMessageRepository, MessageRepository>();
         builder.Services.AddScoped<ITokenController, JwtTokenController>();
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddMemoryCache();
 
         builder.Services.AddSignalR();
@@ -119,6 +121,9 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.UseMiddleware<RequestIdMiddleware>();
+        app.UseExceptionHandler();
         
         app.MapControllers();
         app.MapHub<ChatHub>("hubs/chat");
