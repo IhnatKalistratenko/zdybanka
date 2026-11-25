@@ -1,8 +1,8 @@
-
 import 'package:client/src/theme/app_typography.dart';
 import 'package:client/src/models/register_request.dart';
 import 'package:client/src/services/auth_service.dart';
 import 'package:client/src/widgets/error_card.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -76,14 +76,16 @@ class _RegisterFormState extends State<RegisterForm> {
 
       context.go(LoginPage.pageRoute);
     } catch (e) {
+      dismissGlobalApiErrorWhenHandled(e);
       if (!mounted) return;
 
       setState(() {
         registerError = ErrorCardContent(
           type: "Registration failed",
-          message: e is AuthServiceException
-              ? e.message
-              : "Failed to perform registration. Please try again.",
+          message: apiErrorMessage(
+            e,
+            fallback: 'Could not create your account. Please try again later.',
+          ),
         );
       });
     } finally {
@@ -104,10 +106,7 @@ class _RegisterFormState extends State<RegisterForm> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Center(
-            child: Text(
-              "Register",
-              style: AppTypography.headingLarge,
-            ),
+            child: Text("Register", style: AppTypography.headingLarge),
           ),
           const SizedBox(height: 30),
           const Text("Username:"),
@@ -121,9 +120,7 @@ class _RegisterFormState extends State<RegisterForm> {
               }
               return null;
             },
-            decoration: const InputDecoration(
-              hintText: "Enter your username",
-            ),
+            decoration: const InputDecoration(hintText: "Enter your username"),
           ),
           const SizedBox(height: 30),
           const Text("Password:"),
@@ -139,9 +136,7 @@ class _RegisterFormState extends State<RegisterForm> {
               }
               return null;
             },
-            decoration: const InputDecoration(
-              hintText: "Enter your password",
-            ),
+            decoration: const InputDecoration(hintText: "Enter your password"),
           ),
           const SizedBox(height: 20),
           Center(
@@ -152,30 +147,28 @@ class _RegisterFormState extends State<RegisterForm> {
                   ErrorCard(error: registerError!),
                   const SizedBox(height: 12),
                 ],
-                ElevatedButton(
-                  onPressed: _isSubmitting ? null : register,
-                  style: ElevatedButton.styleFrom(
-                    fixedSize: const Size(200, 50),
-                    textStyle: AppTypography.button,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                DegradedModeBuilder(
+                  builder: (context, isDegraded) => ElevatedButton(
+                    onPressed: _isSubmitting || isDegraded ? null : register,
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: const Size(200, 50),
+                      textStyle: AppTypography.button,
                     ),
-                  )
-                      : const Text("Sign up"),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text("Sign up"),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text(
-                      "Or if you are already with us you may ",
-                    ),
+                    const Text("Or if you are already with us you may "),
                     TextButton(
                       onPressed: () {
                         context.go(LoginPage.pageRoute);

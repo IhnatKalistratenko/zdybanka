@@ -22,7 +22,6 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-
   final EventService _eventService = EventService();
 
   late AlignOnUpdate _alignOnUpdate;
@@ -35,8 +34,7 @@ class _MapPageState extends State<MapPage> {
   LatLng? _lastRequestedCenter;
   double? _lastRequestedZoom;
 
-  Future<List<EventMarker>> futureMarkers =
-  Future.value([]);
+  Future<List<EventMarker>> futureMarkers = Future.value([]);
 
   @override
   void initState() {
@@ -55,7 +53,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _turnOffCameraFix(bool hasGesture) {
-    if(hasGesture && _alignOnUpdate != AlignOnUpdate.never) {
+    if (hasGesture && _alignOnUpdate != AlignOnUpdate.never) {
       setState(() {
         _alignOnUpdate = AlignOnUpdate.never;
       });
@@ -76,8 +74,10 @@ class _MapPageState extends State<MapPage> {
     final previousCenter = _lastRequestedCenter!;
 
     final centerChanged =
-        (currentCenter.latitude - previousCenter.latitude).abs() >= thresholdLat ||
-            (currentCenter.longitude - previousCenter.longitude).abs() >= thresholdLng;
+        (currentCenter.latitude - previousCenter.latitude).abs() >=
+            thresholdLat ||
+        (currentCenter.longitude - previousCenter.longitude).abs() >=
+            thresholdLng;
 
     final zoomChanged = (camera.zoom - _lastRequestedZoom!).abs() >= 0.5;
 
@@ -89,19 +89,16 @@ class _MapPageState extends State<MapPage> {
 
     _debounceTimer?.cancel();
 
-    _debounceTimer = Timer(
-      const Duration(milliseconds: 400),
-          () {
-        if (!mounted) return;
+    _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
 
-        final currentCamera = _mapController.camera;
+      final currentCamera = _mapController.camera;
 
-        _lastRequestedCenter = currentCamera.center;
-        _lastRequestedZoom = currentCamera.zoom;
+      _lastRequestedCenter = currentCamera.center;
+      _lastRequestedZoom = currentCamera.zoom;
 
-        fetchMarkers(currentCamera.visibleBounds);
-      },
-    );
+      fetchMarkers(currentCamera.visibleBounds);
+    });
   }
 
   void fetchMarkers(LatLngBounds bounds) {
@@ -126,16 +123,17 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _handleMarkerClick(EventMarker event) async {
-    switch(event.userStatus) {
+    switch (event.userStatus) {
       case "Created":
-      await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (_) => OwnedEventDetailsWidget(
-      eventId: event.id,
-      onDeleteCallback: _refreshVisibleMarkers,
-    ),);
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          showDragHandle: true,
+          builder: (_) => OwnedEventDetailsWidget(
+            eventId: event.id,
+            onDeleteCallback: _refreshVisibleMarkers,
+          ),
+        );
         return;
       case "Available":
         await showModalBottomSheet<void>(
@@ -145,7 +143,8 @@ class _MapPageState extends State<MapPage> {
           builder: (_) => JoinableEventDetailsWidget(
             eventId: event.id,
             onJoinCallback: _refreshVisibleMarkers,
-          ),);
+          ),
+        );
         return;
       case "Joined":
         await showModalBottomSheet<void>(
@@ -155,22 +154,22 @@ class _MapPageState extends State<MapPage> {
           builder: (_) => JoinedEventDetailsWidget(
             eventId: event.id,
             onLeaveCallback: _refreshVisibleMarkers,
-          ),);
+          ),
+        );
         return;
-        default:
-          return;
+      default:
+        return;
     }
   }
 
-  MaterialColor _getMarkerColor(String userStatus)
-  {
-    if(userStatus == "Created") {
-        return AppColors.markerWarning;
+  MaterialColor _getMarkerColor(String userStatus) {
+    if (userStatus == "Created") {
+      return AppColors.markerWarning;
     }
-    if(userStatus == "Joined") {
+    if (userStatus == "Joined") {
       return AppColors.markerPrimary;
     }
-    if(userStatus == "Past") {
+    if (userStatus == "Past") {
       return AppColors.markerNeutral;
     }
 
@@ -181,70 +180,81 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder(
-          future: futureUserPosition,
-          builder: (context, snapshot) {
-            if(snapshot.hasError) {
-                return Text("${snapshot.error}");
-            } else if(snapshot.hasData) {
-              return FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: snapshot.data != null ? LatLng(snapshot.data!.latitude, snapshot.data!.longitude) : LatLng(0, 0),
-                  initialZoom: 16,
-                  minZoom: 12,
-                  onMapReady: () {
-                    _scheduleFetch(_mapController.camera);
-                  },
-                  onPositionChanged: (MapCamera camera, bool hasGesture) {
-                    _turnOffCameraFix(hasGesture);
-                    _scheduleFetch(camera);
-                  }
+        future: futureUserPosition,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text('Could not determine your location.'),
+            );
+          } else if (snapshot.hasData) {
+            return FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: snapshot.data != null
+                    ? LatLng(snapshot.data!.latitude, snapshot.data!.longitude)
+                    : LatLng(0, 0),
+                initialZoom: 16,
+                minZoom: 12,
+                onMapReady: () {
+                  _scheduleFetch(_mapController.camera);
+                },
+                onPositionChanged: (MapCamera camera, bool hasGesture) {
+                  _turnOffCameraFix(hasGesture);
+                  _scheduleFetch(camera);
+                },
+              ),
+              children: [
+                PrimaryTileLayer(),
+                CurrentLocationLayer(
+                  alignPositionOnUpdate: _alignOnUpdate,
+                  alignPositionStream: _alignPositionStreamController.stream,
                 ),
-                children: [
-                  PrimaryTileLayer(),
-                  CurrentLocationLayer(
-                    alignPositionOnUpdate: _alignOnUpdate,
-                    alignPositionStream: _alignPositionStreamController.stream,
-                  ),
-                  Align(
-                    alignment: Alignment(0.9, 0.9),
-                    child: FloatingActionButton(onPressed: () {
+                Align(
+                  alignment: Alignment(0.9, 0.9),
+                  child: FloatingActionButton(
+                    onPressed: () {
                       setState(() {
                         _alignOnUpdate = AlignOnUpdate.always;
                       });
                       _alignPositionStreamController.add(16);
                     },
-                      child: Icon(Icons.my_location, color: AppColors.location,),
-                    ),
+                    child: Icon(Icons.my_location, color: AppColors.location),
                   ),
-                  FutureBuilder(future: futureMarkers,
-                      builder: (context, snapshot) {
-                        if(snapshot.hasData && snapshot.data != null)
-                          {
-                            return MarkerLayer(
-                                markers: snapshot.data!.map<Marker>((e) =>
-                                    Marker(
-                                        point: LatLng(e.latitude, e.longitude),
-                                        child: GestureDetector(
-                                          onTap: () => _handleMarkerClick(e),
-                                          child: Icon(Icons.location_on, color: _getMarkerColor(e.userStatus), size: 27,),
-                                        )
-                                    )
-                                ).toList(),
-                            );
-                          }
-                        return MarkerLayer(markers: []);
-                      }),
-                  SimpleAttributionWidget(
-                    source: Text("OpenStreetMap contributors"),
-                  ),
-                ],
-              );
-            }
-            return CircularProgressIndicator();
-          })
+                ),
+                FutureBuilder(
+                  future: futureMarkers,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return MarkerLayer(
+                        markers: snapshot.data!
+                            .map<Marker>(
+                              (e) => Marker(
+                                point: LatLng(e.latitude, e.longitude),
+                                child: GestureDetector(
+                                  onTap: () => _handleMarkerClick(e),
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: _getMarkerColor(e.userStatus),
+                                    size: 27,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    }
+                    return MarkerLayer(markers: []);
+                  },
+                ),
+                SimpleAttributionWidget(
+                  source: Text("OpenStreetMap contributors"),
+                ),
+              ],
+            );
+          }
+          return CircularProgressIndicator();
+        },
+      ),
     );
   }
-
-
 }

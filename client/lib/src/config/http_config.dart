@@ -5,8 +5,8 @@ import '../services/api_client.dart';
 import '../services/auth_aware_http_client.dart';
 
 class ApiRoutes {
-  static final String baseUrl = "http://192.168.0.103:5000/api";
-  static final String baseSignalrUrl = "http://192.168.0.103:5000/hubs/chat";
+  static final String baseUrl = "http://192.168.43.113:5000/api";
+  static final String baseSignalrUrl = "http://192.168.43.113:5000/hubs/chat";
   static final String loginRoute = "$baseUrl/Auth/login";
   static final String registerRoute = "$baseUrl/User";
   static final String userRoute = "$baseUrl/User/me";

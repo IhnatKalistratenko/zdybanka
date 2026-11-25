@@ -11,6 +11,7 @@ import '../../services/event_service.dart';
 import '../../services/tag_service.dart';
 import '../../widgets/event_form_inputs.dart';
 import '../../widgets/form_field_container.dart';
+import '../../widgets/api_status_banners.dart';
 import 'choose_location.dart';
 
 class EditEventPage extends StatefulWidget {
@@ -85,9 +86,13 @@ class _EditEventPageState extends State<EditEventPage> {
         _isLoading = false;
       });
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
-        _loadError = error.toString();
+        _loadError = apiErrorMessage(
+          error,
+          fallback: 'Could not load the event.',
+        );
         _isLoading = false;
       });
     }
@@ -180,11 +185,16 @@ class _EditEventPageState extends State<EditEventPage> {
       );
       Navigator.of(context).pop();
     } on EventServiceException catch (error) {
-      if (mounted) setState(() => _submitError = error.message);
-    } catch (_) {
+      dismissGlobalApiErrorWhenHandled(error);
+      if (mounted) setState(() => _submitError = apiErrorMessage(error));
+    } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (mounted) {
         setState(
-          () => _submitError = 'Could not update the event. Please try again.',
+          () => _submitError = apiErrorMessage(
+            error,
+            fallback: 'Could not update the event. Please try again later.',
+          ),
         );
       }
     } finally {
@@ -196,10 +206,7 @@ class _EditEventPageState extends State<EditEventPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Edit event',
-          style: AppTypography.headingMedium,
-        ),
+        title: const Text('Edit event', style: AppTypography.headingMedium),
       ),
       body: SafeArea(
         child: _isLoading
@@ -359,23 +366,29 @@ class _EditEventPageState extends State<EditEventPage> {
                       if (_submitError != null) ...[
                         Text(
                           _submitError!,
-                          style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
+                          style: AppTypography.body.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                         const SizedBox(height: 8),
                       ],
                       SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _isSubmitting ? null : _submit,
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Save changes'),
+                        child: DegradedModeBuilder(
+                          builder: (context, isDegraded) => OutlinedButton(
+                            onPressed: _isSubmitting || isDegraded
+                                ? null
+                                : _submit,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Save changes'),
+                          ),
                         ),
                       ),
                     ],

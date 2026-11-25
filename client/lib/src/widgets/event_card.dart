@@ -39,10 +39,7 @@ class EventCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.name,
-                    style: AppTypography.titleSmall,
-                  ),
+                  Text(event.name, style: AppTypography.titleSmall),
                   const SizedBox(height: 10),
                   _infoRow(Icons.calendar_month, _formatDate(event.startTime)),
                   const SizedBox(height: 7),
@@ -53,10 +50,7 @@ class EventCard extends StatelessWidget {
                     runSpacing: 4,
                     children: event.tags.map((tag) {
                       return Chip(
-                        label: Text(
-                          tag.name,
-                          style: AppTypography.overline,
-                        ),
+                        label: Text(tag.name, style: AppTypography.overline),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -99,7 +93,7 @@ class EventDistanceTrailing extends StatelessWidget {
         const Icon(Icons.near_me_outlined),
         const SizedBox(height: 4),
         Text(
-          '${distanceKm.toStringAsFixed(1)} км',
+          '${distanceKm.toStringAsFixed(1)} km',
           textAlign: TextAlign.center,
           style: AppTypography.caption,
         ),

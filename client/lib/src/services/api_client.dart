@@ -46,7 +46,11 @@ class ApiError {
       final value = jsonDecode(body);
       if (value is Map) {
         return ApiError(
-          error: value['error'] is String ? value['error'] : 'Request failed.',
+          error: value['error'] is String
+              ? value['error'] as String
+              : value['message'] is String
+              ? value['message'] as String
+              : 'Request failed.',
           code: value['code'] is String ? value['code'] : null,
           details: value['details'],
           requestId: value['requestId'] is String ? value['requestId'] : null,
@@ -55,9 +59,7 @@ class ApiError {
     } catch (_) {
       /* malformed backend error: use a safe fallback */
     }
-    return ApiError(
-      error: body.trim().isEmpty ? 'Request failed.' : body.trim(),
-    );
+    return const ApiError(error: 'Request failed.');
   }
 }
 
@@ -127,19 +129,26 @@ class ApiClient {
   final int maxRetries;
   final Duration initialBackoff, maxBackoff, maxRetryAfter;
   final DegradedModeManager degradedMode;
+  final ValueNotifier<ApiException?> lastError = ValueNotifier(null);
   String? lastRequestId;
   bool _closed = false;
+
+  void clearReportedError(ApiException error) {
+    if (identical(lastError.value, error)) lastError.value = null;
+  }
 
   dynamic decodeJson(String source, {String? requestId}) {
     try {
       return jsonDecode(source);
     } on FormatException catch (error) {
-      throw ApiException(
+      final apiError = ApiException(
         message: 'The server returned invalid JSON.',
         code: 'invalid_json',
         requestId: requestId ?? lastRequestId,
         cause: error,
       );
+      _publishError(apiError);
+      throw apiError;
     }
   }
 
@@ -317,7 +326,8 @@ class ApiClient {
           isRetryable: retryable,
           cause: response.body,
         );
-      } on ApiException {
+      } on ApiException catch (error) {
+        _publishError(error);
         rethrow;
       } catch (error) {
         if (options.cancellation?.isCompleted ?? false)
@@ -334,7 +344,7 @@ class ApiClient {
           continue;
         }
         degradedMode.recordFailure();
-        throw ApiException(
+        final apiError = ApiException(
           message: timedOut
               ? 'The request timed out.'
               : 'Unable to reach the server.',
@@ -343,10 +353,18 @@ class ApiClient {
           isRetryable: true,
           cause: error,
         );
+        _publishError(apiError);
+        throw apiError;
       } finally {
         timer.cancel();
         if (cancelSub != null) unawaited(cancelSub);
       }
+    }
+  }
+
+  void _publishError(ApiException error) {
+    if (error.code != 'cancelled' && error.code != 'closed') {
+      lastError.value = error;
     }
   }
 

@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
+
 import '../../models/create_event_request.dart';
 import '../../models/event_tag.dart';
 import '../../services/event_service.dart';
 import '../../services/tag_service.dart';
 import '../../widgets/event_form_inputs.dart';
 import '../../widgets/form_field_container.dart';
+import '../../widgets/api_status_banners.dart';
 import '../Profile/profile.dart';
 import 'choose_location.dart';
+
 import 'package:flutter_multi_selector/flutter_multi_selector.dart';
 
 class CreateEventPage extends StatefulWidget {
-
-  const CreateEventPage({
-    super.key,
-  });
+  const CreateEventPage({super.key});
 
   @override
   State<CreateEventPage> createState() => _CreateEventPageState();
@@ -65,12 +65,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
         _isLoadingTags = false;
       });
     } on TagServiceException catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
-        _tagsError = error.message;
+        _tagsError = apiErrorMessage(error);
         _isLoadingTags = false;
       });
-    } catch (_) {
+    } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
         _tagsError = 'Could not load tags. Please try again.';
@@ -88,11 +90,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   DateTime get _now => DateTime.now();
 
-  DateTime get _latestAllowedDate =>
-      _now.add(const Duration(days: 365));
+  DateTime get _latestAllowedDate => _now.add(const Duration(days: 365));
 
-  String? _validateStartDate()
-  {
+  String? _validateStartDate() {
     if (_startDate == null) {
       return 'Select the start date and time';
     } else if (!_startDate!.isAfter(_now)) {
@@ -104,12 +104,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
     return null;
   }
 
-  String? _validateEndDate()
-  {
+  String? _validateEndDate() {
     if (_endDate == null) {
       return 'Select the end date and time';
-    } else if (_startDate != null &&
-        !_endDate!.isAfter(_startDate!)) {
+    } else if (_startDate != null && !_endDate!.isAfter(_startDate!)) {
       return 'End time must be after start time';
     } else if (_endDate!.isAfter(_latestAllowedDate)) {
       return 'End time cannot be more than 365 days ahead';
@@ -118,8 +116,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     return null;
   }
 
-  String? _validateLocation()
-  {
+  String? _validateLocation() {
     if (_location == null) {
       return 'Choose the event location on the map';
     }
@@ -142,17 +139,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
       _locationError = locationError;
     });
 
-    return startError == null &&
-        endError == null &&
-        locationError == null;
+    return startError == null && endError == null && locationError == null;
   }
 
   Future<void> _chooseLocation() async {
-    final result = await Navigator.of(context).push<PickedData>(
-      MaterialPageRoute(
-        builder: (_) => ChooseLocationPage(),
-      ),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push<PickedData>(MaterialPageRoute(builder: (_) => ChooseLocationPage()));
 
     if (!mounted || result == null) return;
 
@@ -214,20 +207,24 @@ class _CreateEventPageState extends State<CreateEventPage> {
       );
       context.go(ProfilePage.pageRoute);
     } on EventServiceException catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
 
       setState(() {
-        _submitError = error.message.trim().isNotEmpty
-            ? error.message.trim()
-            : 'Could not create the event. Please try again.';
+        _submitError = apiErrorMessage(
+          error,
+          fallback: 'Could not create the event. Please try again later.',
+        );
       });
-    } catch (e) {
-      print(e);
+    } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
 
       setState(() {
-        _submitError =
-        'Could not create the event. Please try again.';
+        _submitError = apiErrorMessage(
+          error,
+          fallback: 'Could not create the event. Please try again later.',
+        );
       });
     } finally {
       if (mounted) {
@@ -242,8 +239,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create new event',
-        style: AppTypography.headingMedium),
+        title: const Text(
+          'Create new event',
+          style: AppTypography.headingMedium,
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -354,8 +353,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   errorText: _locationError,
                   child: SelectableInput(
                     icon: Icons.location_on_outlined,
-                    text: _location?.address ??
-                        'Choose location on map',
+                    text: _location?.address ?? 'Choose location on map',
                     onTap: _chooseLocation,
                   ),
                 ),
@@ -366,9 +364,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   required: true,
                   child: TextFormField(
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.people_outline),
                       hintText: 'Enter maximum participants',
@@ -400,10 +396,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   title: 'Tags',
                   child: MultiSelectorBottomSheetField<EventTag>(
                     items: _availableTags
-                        .map((tag) => MultiSelectorItem<EventTag>(tag, tag.name))
+                        .map(
+                          (tag) => MultiSelectorItem<EventTag>(tag, tag.name),
+                        )
                         .toList(),
                     onConfirm: _chooseTags,
-                  )
+                  ),
                 ),
                 if (_isLoadingTags) ...[
                   const SizedBox(height: 8),
@@ -412,7 +410,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   const SizedBox(height: 8),
                   Text(
                     _tagsError!,
-                    style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
+                    style: AppTypography.body.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -420,24 +420,26 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 if (_submitError != null) ...[
                   Text(
                     _submitError!,
-                    style: AppTypography.body.copyWith(color: Theme.of(context).colorScheme.error),
+                    style: AppTypography.body.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],
 
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _isSubmitting ? null : _submit,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    )
-                        : const Text('Create'),
+                  child: DegradedModeBuilder(
+                    builder: (context, isDegraded) => OutlinedButton(
+                      onPressed: _isSubmitting || isDegraded ? null : _submit,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Create'),
+                    ),
                   ),
                 ),
               ],

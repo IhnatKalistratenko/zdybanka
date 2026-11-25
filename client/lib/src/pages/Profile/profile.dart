@@ -8,10 +8,12 @@ import 'package:client/src/services/event_service.dart';
 import 'package:client/src/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../models/event.dart';
 import '../../models/user.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/event_details_widget.dart';
+import '../../widgets/api_status_banners.dart';
 
 class ProfilePage extends StatefulWidget {
   static final String pageRoute = "/profile";
@@ -22,7 +24,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-
   late Future<User> futureUser;
   late Future<List<Event>> futureEvents;
 
@@ -43,7 +44,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> onExitClick() async {
     await AuthService().logout();
-    if(!mounted) return;
+    if (!mounted) return;
     GoRouter.of(context).go(LoginPage.pageRoute);
   }
 
@@ -55,10 +56,15 @@ class _ProfilePageState extends State<ProfilePage> {
           child: FutureBuilder(
             future: futureUser,
             builder: (context, snapshot) {
-              if(snapshot.hasError) {
-                return Text("${snapshot.error}");
-              }
-              else if(snapshot.hasData) {
+              if (snapshot.hasError) {
+                dismissGlobalApiErrorWhenHandled(snapshot.error);
+                return Text(
+                  apiErrorMessage(
+                    snapshot.error!,
+                    fallback: 'Could not load your profile.',
+                  ),
+                );
+              } else if (snapshot.hasData) {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -73,7 +79,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               Text(
                                 snapshot.data!.username,
-                                style: AppTypography.title.copyWith(letterSpacing: 1.5),
+                                style: AppTypography.title.copyWith(
+                                  letterSpacing: 1.5,
+                                ),
                               ),
                               OutlinedButton.icon(
                                 label: Text("Exit"),
@@ -81,7 +89,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: ButtonStyle(
                                   shape: WidgetStatePropertyAll(
                                     RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                      borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusSmall,
+                                      ),
                                     ),
                                   ),
                                   side: WidgetStatePropertyAll(
@@ -91,7 +101,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                     AppColors.error,
                                   ),
                                 ),
-                                icon: Icon(Icons.exit_to_app, color: AppColors.error),
+                                icon: Icon(
+                                  Icons.exit_to_app,
+                                  color: AppColors.error,
+                                ),
                               ),
                             ],
                           ),
@@ -99,7 +112,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           TextButton.icon(
                             onPressed: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => EditProfile()),
+                                MaterialPageRoute(
+                                  builder: (context) => EditProfile(),
+                                ),
                               );
                             },
                             icon: Icon(Icons.edit),
@@ -111,50 +126,69 @@ class _ProfilePageState extends State<ProfilePage> {
                     SizedBox(height: 30),
                     Divider(thickness: 0.5),
                     Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
-                        child: Column(
-                          children: [
-                            EventsList(
-                              title: "My events",
-                              icon: Icon(Icons.calendar_month),
-                              eventsFuture: futureEvents,
-                              selectEvents: (events) => events
-                                  .where((event) => event.userStatus.toLowerCase() == 'created')
-                                  .toList(),
-                              detailsWidgetBuilder: (id) => OwnedEventDetailsWidget(
-                                eventId: id,
-                                onDeleteCallback: _reloadEvents,
-                              ),
-                            ),
-                            SizedBox(height: 10),
-                            EventsList(title: "Joined events",
-                              icon: Icon(Icons.people),
-                              eventsFuture: futureEvents,
-                              selectEvents: (events) => events
-                                  .where((event) => event.userStatus.toLowerCase() == 'joined')
-                                  .toList(),
-                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
-                                eventId: id,
-                                onLeaveCallback: _reloadEvents,
-                              ),),
-                            SizedBox(height: 10),
-                            EventsList(title: "Past events",
-                              icon: Icon(Icons.update),
-                              eventsFuture: futureEvents,
-                              selectEvents: (events) => events
-                                  .where((event) => event.userStatus.toLowerCase() == 'past')
-                                  .toList(),
-                              detailsWidgetBuilder: (id) => JoinedEventDetailsWidget(
-                                eventId: id,
-                                onLeaveCallback: _reloadEvents,
-                              ),),
-                          ],
-                        )
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 15,
+                      ),
+                      child: Column(
+                        children: [
+                          EventsList(
+                            title: "My events",
+                            icon: Icon(Icons.calendar_month),
+                            eventsFuture: futureEvents,
+                            selectEvents: (events) => events
+                                .where(
+                                  (event) =>
+                                      event.userStatus.toLowerCase() ==
+                                      'created',
+                                )
+                                .toList(),
+                            detailsWidgetBuilder: (id) =>
+                                OwnedEventDetailsWidget(
+                                  eventId: id,
+                                  onDeleteCallback: _reloadEvents,
+                                ),
+                          ),
+                          SizedBox(height: 10),
+                          EventsList(
+                            title: "Joined events",
+                            icon: Icon(Icons.people),
+                            eventsFuture: futureEvents,
+                            selectEvents: (events) => events
+                                .where(
+                                  (event) =>
+                                      event.userStatus.toLowerCase() ==
+                                      'joined',
+                                )
+                                .toList(),
+                            detailsWidgetBuilder: (id) =>
+                                JoinedEventDetailsWidget(
+                                  eventId: id,
+                                  onLeaveCallback: _reloadEvents,
+                                ),
+                          ),
+                          SizedBox(height: 10),
+                          EventsList(
+                            title: "Past events",
+                            icon: Icon(Icons.update),
+                            eventsFuture: futureEvents,
+                            selectEvents: (events) => events
+                                .where(
+                                  (event) =>
+                                      event.userStatus.toLowerCase() == 'past',
+                                )
+                                .toList(),
+                            detailsWidgetBuilder: (id) =>
+                                JoinedEventDetailsWidget(
+                                  eventId: id,
+                                  onLeaveCallback: _reloadEvents,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 );
-
-
               }
 
               return const CircularProgressIndicator();
@@ -172,7 +206,14 @@ class EventsList extends StatefulWidget {
   final Future<List<Event>> eventsFuture;
   final List<Event> Function(List<Event>) selectEvents;
   final Widget Function(String) detailsWidgetBuilder;
-  const EventsList({super.key, required this.title, required this.icon, required this.eventsFuture, required this.selectEvents, required this.detailsWidgetBuilder});
+  const EventsList({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.eventsFuture,
+    required this.selectEvents,
+    required this.detailsWidgetBuilder,
+  });
 
   @override
   State<EventsList> createState() => _EventsListState();
@@ -194,14 +235,16 @@ class _EventsListState extends State<EventsList> {
         text: TextSpan(
           style: AppTypography.titleMedium.copyWith(letterSpacing: 1.3),
           children: [
-            WidgetSpan(child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
-              child: widget.icon,
-            )),
+            WidgetSpan(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
+                child: widget.icon,
+              ),
+            ),
             TextSpan(
-                text: widget.title,
-              style: AppTypography.title.copyWith(color: AppColors.onDark)
-            )
+              text: widget.title,
+              style: AppTypography.title.copyWith(color: AppColors.onDark),
+            ),
           ],
         ),
       ),
@@ -210,9 +253,15 @@ class _EventsListState extends State<EventsList> {
           future: widget.eventsFuture,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
+              dismissGlobalApiErrorWhenHandled(snapshot.error);
               return Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('Could not load events: ${snapshot.error}'),
+                child: Text(
+                  apiErrorMessage(
+                    snapshot.error!,
+                    fallback: 'Could not load events.',
+                  ),
+                ),
               );
             }
             if (!snapshot.hasData) {
@@ -229,16 +278,20 @@ class _EventsListState extends State<EventsList> {
               );
             }
             return Column(
-              children: events.map<Widget>((event) => EventCard(
-                trailing: const EventArrowTrailing(),
-                event: event,
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  showDragHandle: true,
-                  builder: (_) => widget.detailsWidgetBuilder(event.id),
-                ),
-              )).toList(),
+              children: events
+                  .map<Widget>(
+                    (event) => EventCard(
+                      trailing: const EventArrowTrailing(),
+                      event: event,
+                      onTap: () => showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        builder: (_) => widget.detailsWidgetBuilder(event.id),
+                      ),
+                    ),
+                  )
+                  .toList(),
             );
           },
         ),
