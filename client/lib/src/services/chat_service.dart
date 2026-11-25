@@ -3,21 +3,21 @@ import 'dart:convert';
 import 'package:client/src/config/http_config.dart';
 import 'package:client/src/models/chat_view.dart';
 import 'package:client/src/models/extended_chat.dart';
-import 'package:client/src/services/auth_aware_http_client.dart';
+import 'package:client/src/services/api_client.dart';
+
 import '../config/storage_config.dart';
 
-class ChatServiceException implements Exception {
-  final String message;
-  final int? statusCode;
-
-  const ChatServiceException(this.message, {this.statusCode});
-
-  @override
-  String toString() => message;
+class ChatServiceException extends ApiException {
+  const ChatServiceException(String message, {int? statusCode})
+    : super(
+        message: message,
+        code: statusCode == null ? 'chat_error' : 'http_error',
+        statusCode: statusCode,
+      );
 }
 
 class ChatService {
-  final AuthAwareHttpClient _client = AuthAwareHttpClient();
+  final ApiClient _client = apiClient;
 
   Future<String> checkForAuthorize() async {
     final token = await secureStorage.read(key: "token");
@@ -30,21 +30,16 @@ class ChatService {
 
   Future<List<ChatView>> getUserChats() async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .get(
-          Uri.parse(ApiRoutes.getUserChats),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.get(
+      Uri.parse(ApiRoutes.getUserChats),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = utf8.decode(response.bodyBytes).trim();
       var message = 'Failed to load your chats.';
       try {
-        final data = jsonDecode(body);
+        final data = apiClient.decodeJson(body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -69,7 +64,7 @@ class ChatService {
     }
 
     try {
-      final data = jsonDecode(responseBody);
+      final data = apiClient.decodeJson(responseBody);
       if (data is! List) {
         throw const FormatException('Invalid chats response.');
       }
@@ -89,21 +84,16 @@ class ChatService {
 
   Future<ExtendedChat> getChatById(String chatId) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .get(
-          Uri.parse(ApiRoutes.getChatById(chatId)),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.get(
+      Uri.parse(ApiRoutes.getChatById(chatId)),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final body = utf8.decode(response.bodyBytes).trim();
       var message = 'Failed to load chat.';
       try {
-        final data = jsonDecode(body);
+        final data = apiClient.decodeJson(body);
         if (data is Map) {
           for (final key in ['error', 'message', 'title', 'detail']) {
             final value = data[key];
@@ -122,7 +112,7 @@ class ChatService {
     }
 
     try {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = apiClient.decodeJson(utf8.decode(response.bodyBytes));
       if (data is! Map) {
         throw const FormatException('Invalid chat response.');
       }
@@ -140,20 +130,15 @@ class ChatService {
     required String description,
   }) async {
     final token = await checkForAuthorize();
-    final response = await _client
-        .post(
-          Uri.parse(ApiRoutes.updateChat(chatId)),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'name': name,
-            'description': description,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _client.post(
+      Uri.parse(ApiRoutes.updateChat(chatId)),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'name': name, 'description': description}),
+    );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
@@ -162,7 +147,7 @@ class ChatService {
     final body = utf8.decode(response.bodyBytes).trim();
     var message = 'Failed to update chat.';
     try {
-      final data = jsonDecode(body);
+      final data = apiClient.decodeJson(body);
       if (data is Map) {
         for (final key in ['error', 'message', 'title', 'detail']) {
           final value = data[key];

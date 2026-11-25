@@ -14,23 +14,7 @@ public class AuthController(AuthService authService) : Controller
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest dto)
     {
-        try
-        {
-            string token = await _authService.AuthorizeUser(dto);
-            return Ok(new { token });
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new ErrorResponse() { Code = ErrorCodes.NotFound, Error = "User not found." });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return BadRequest(new ErrorResponse() { Code = ErrorCodes.WrongPassword, Error = "Wrong password" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ErrorResponse() { Code = ErrorCodes.ServerError, Error = "Unknown error. Please try again." });
-        }
-        
+        string token = await _authService.AuthorizeUser(dto);
+        return Ok(new { token });
     }
 }

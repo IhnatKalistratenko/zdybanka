@@ -26,7 +26,7 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if(!serviceEnabled) {
+    if (!serviceEnabled) {
       return Future.error("Location services are disabled");
     }
 
@@ -40,7 +40,8 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
 
     if (permission == LocationPermission.deniedForever) {
       return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
+        'Location permissions are permanently denied, we cannot request permissions.',
+      );
     }
 
     final position = await Geolocator.getCurrentPosition();
@@ -51,36 +52,31 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text("Choose event location")),
-        body: FutureBuilder(
-          future: _locationFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+      appBar: AppBar(title: Text("Choose event location")),
+      body: FutureBuilder(
+        future: _locationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  "Failed to get location: ${snapshot.error}",
-                ),
-              );
-            }
-
-            final initialLocation = snapshot.data!;
-
-            return FlutterLocationPicker.withConfiguration(
-              userAgent: "com.zdybanka.app",
-              initPosition: initialLocation,
-              onPicked: (PickedData pickedData) {
-                Navigator.of(context).pop(pickedData);
-              },
+          if (snapshot.hasError) {
+            return Center(
+              child: const Text('Could not determine your location.'),
             );
-          },
-        ),
+          }
+
+          final initialLocation = snapshot.data!;
+
+          return FlutterLocationPicker.withConfiguration(
+            userAgent: "com.zdybanka.app",
+            initPosition: initialLocation,
+            onPicked: (PickedData pickedData) {
+              Navigator.of(context).pop(pickedData);
+            },
+          );
+        },
+      ),
     );
   }
 }
-

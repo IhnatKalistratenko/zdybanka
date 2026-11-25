@@ -5,6 +5,7 @@ import 'package:client/src/pages/Authorization/register.dart';
 import 'package:client/src/pages/Events/events.dart';
 import 'package:client/src/services/auth_service.dart';
 import 'package:client/src/widgets/error_card.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -52,19 +53,20 @@ class _LoginFormState extends State<LoginForm> {
     super.dispose();
   }
 
-  void login() async
-  {
-    if(!_formKey.currentState!.validate())
-      {
-        return;
-      }
+  void login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       authError = null;
       _isSubmitting = true;
     });
 
-    LoginRequest request = LoginRequest(username: usernameController.text, password: passwordController.text);
+    LoginRequest request = LoginRequest(
+      username: usernameController.text,
+      password: passwordController.text,
+    );
 
     try {
       await AuthService().login(request);
@@ -72,11 +74,18 @@ class _LoginFormState extends State<LoginForm> {
       if (!mounted) return;
 
       GoRouter.of(context).go(EventsPage.pageRoute);
-    } catch(e) {
+    } catch (e) {
+      dismissGlobalApiErrorWhenHandled(e);
       if (!mounted) return;
-      setState(() {
-        authError = ErrorCardContent(type: "Authorization failed", message: e is AuthServiceException ? e.message : "Failed to perform login. Please try again.");
-      });
+      setState(
+        () => authError = ErrorCardContent(
+          type: "Authorization failed",
+          message: apiErrorMessage(
+            e,
+            fallback: 'Could not sign in. Check your details and try again.',
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -111,9 +120,7 @@ class _LoginFormState extends State<LoginForm> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: "Enter your username",
-            ),
+            decoration: InputDecoration(hintText: "Enter your username"),
           ),
           const SizedBox(height: 30),
           const Text("Password:"),
@@ -129,30 +136,27 @@ class _LoginFormState extends State<LoginForm> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: "Enter your password",
-            ),
+            decoration: InputDecoration(hintText: "Enter your password"),
           ),
           const SizedBox(height: 20),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if(authError != null) ErrorCard(error: authError!),
+                if (authError != null) ErrorCard(error: authError!),
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : login,
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
                     textStyle: AppTypography.button,
                   ),
-                  child: _isSubmitting ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  ) :
-                  const Text("Sign in"),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Sign in"),
                 ),
 
                 const SizedBox(height: 16),

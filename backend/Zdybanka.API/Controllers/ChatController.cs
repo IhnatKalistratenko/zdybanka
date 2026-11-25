@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Zdybanka.Application.DTO;
 using Zdybanka.Application.DTO.Chat;
 using Zdybanka.Application.Services;
 
@@ -8,9 +10,10 @@ namespace Zdybanka.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ChatController(ChatService chatService) : Controller
+public class ChatController(ChatService chatService, IdempotencyService idempotencyService) : Controller
 {
     private readonly ChatService _chatService = chatService;
+    private readonly IdempotencyService _idempotencyService = idempotencyService;
 
     private Guid CheckUserAuthorization()
     {
@@ -26,24 +29,17 @@ public class ChatController(ChatService chatService) : Controller
     [HttpGet("")]
     public async Task<IActionResult> GetChats()
     {
-        try
-        {
+        
             List<ChatViewResponse> chats = await _chatService.GetAllChats();
             
             return Ok(chats);
         }
-        catch (Exception e)
-        {
-            return StatusCode(500);
-        }
-    }
 
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetUserChats()
     {
-        try
-        {
+        
             var rawUserId = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(rawUserId, out Guid userId))
             {
@@ -54,62 +50,49 @@ public class ChatController(ChatService chatService) : Controller
 
             return Ok(userChats);
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return StatusCode(500);
-        }
-    }
 
     [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetChatById(Guid id)
     {
-        try
-        {
+        
             Guid userId = CheckUserAuthorization();
             ExtendedChatResponse chatView = await _chatService.GetChatById(id, userId);
 
             return Ok(chatView);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException e)
-        {
-            Console.WriteLine(e);
-            return Unauthorized();
-        }
-    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteChat([FromRoute] Guid id)
     {
-        try
-        {
+        
             await _chatService.DeleteChat(id);
 
             return NoContent();
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound();
-        }
-    }
 
     [HttpPost("{id:guid}")]
     public async Task<IActionResult> UpdateChat([FromRoute] Guid id, [FromBody] UpdateChatDto dto)
     {
-        try
+        if (!Guid.TryParse(Request.Headers["Idempotency-Key"], out var key))
         {
-            ChatViewResponse viewResponse = await _chatService.UpdateChat(id, dto);
+            return BadRequest(new ErrorResponse
+            {
+                Message = "A valid Idempotency-Key GUID header is required.",
+                Code = ErrorCodes.InvalidArgument,
+                RequestId = HttpContext.TraceIdentifier
+            });
+        }
 
-            return Ok(viewResponse);
-        }
-        catch (KeyNotFoundException e)
+        var previousResponse = await _idempotencyService.GetResponseAsync(key.ToString());
+        if (previousResponse is not null)
         {
-            return  NotFound();
+            return Content(previousResponse, "application/json");
         }
+
+        ChatViewResponse viewResponse = await _chatService.UpdateChat(id, dto);
+        var response = JsonSerializer.Serialize(viewResponse, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        await _idempotencyService.SaveResponseAsync(key.ToString(), response);
+        return Ok(viewResponse);
     }
 }

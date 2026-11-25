@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:client/src/theme/app_colors.dart';
@@ -9,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:client/src/models/extended_chat.dart';
 import 'package:client/src/models/message.dart';
 import 'package:client/src/services/chat_service.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
+import 'package:client/src/config/http_config.dart';
 
 import 'edit_chat.dart';
 
@@ -54,8 +55,13 @@ class _ChatPageState extends State<ChatPage> {
       await _signalrService.joinChat(widget.chatId);
     } catch (error) {
       if (!mounted) return;
+      dismissGlobalApiErrorWhenHandled(error);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Chat connection failed: $error')),
+        SnackBar(
+          content: Text(
+            apiErrorMessage(error, fallback: 'Could not connect to the chat.'),
+          ),
+        ),
       );
     }
   }
@@ -88,9 +94,14 @@ class _ChatPageState extends State<ChatPage> {
       await _signalrService.sendMessage(widget.chatId, text);
       if (mounted) _messageController.clear();
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $error')),
+          SnackBar(
+            content: Text(
+              apiErrorMessage(error, fallback: 'Could not send the message.'),
+            ),
+          ),
         );
       }
     } finally {
@@ -184,11 +195,15 @@ class _ChatPageState extends State<ChatPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
+            dismissGlobalApiErrorWhenHandled(snapshot.error);
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Failed to load chat.',
+                  apiErrorMessage(
+                    snapshot.error!,
+                    fallback: 'Could not load the chat.',
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -232,51 +247,59 @@ class _ChatPageState extends State<ChatPage> {
                       ),
               ),
 
-          // Message input
-          const Divider(height: 1, color: AppColors.border),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      minLines: 1,
-                      maxLines: 5,
-                      textCapitalization: TextCapitalization.sentences,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: 'Write you message...',
-                        hintStyle: AppTypography.body.copyWith(
-                          color: AppColors.textMuted,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.background,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+              // Message input
+              const Divider(height: 1, color: AppColors.border),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          minLines: 1,
+                          maxLines: 5,
+                          textCapitalization: TextCapitalization.sentences,
+                          onSubmitted: (_) {
+                            if (!apiClient.degradedMode.isDegraded) {
+                              _sendMessage();
+                            }
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Write you message...',
+                            hintStyle: AppTypography.body.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.background,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      DegradedModeBuilder(
+                        builder: (context, isDegraded) => IconButton.filled(
+                          onPressed: isDegraded || _isSending
+                              ? null
+                              : _sendMessage,
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.onPrimary,
+                            fixedSize: const Size(48, 48),
+                          ),
+                          icon: const Icon(Icons.send_rounded, size: 21),
+                          tooltip: 'Send message',
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _isSending ? null : _sendMessage,
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                      fixedSize: const Size(48, 48),
-                    ),
-                    icon: const Icon(Icons.send_rounded, size: 21),
-                    tooltip: 'Send message',
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
             ],
           );
         },
@@ -327,19 +350,19 @@ class _MessageDateDivider extends StatelessWidget {
 }
 
 String _monthName(int month) => const [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ][month - 1];
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+][month - 1];
 
 class _MessageBubble extends StatelessWidget {
   final Message message;
@@ -355,9 +378,7 @@ class _MessageBubble extends StatelessWidget {
         '${sentAt.hour.toString().padLeft(2, '0')}:${sentAt.minute.toString().padLeft(2, '0')}';
 
     return Align(
-      alignment: isMine
-          ? Alignment.centerRight
-          : Alignment.centerLeft,
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.sizeOf(context).width * 0.78,
@@ -380,14 +401,9 @@ class _MessageBubble extends StatelessWidget {
               ),
             ],
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isMine
-                    ? AppColors.primary
-                    : AppColors.chatBubble,
+                color: isMine ? AppColors.primary : AppColors.chatBubble,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -460,9 +476,9 @@ class ChatDetailsPopUp extends StatelessWidget {
                   ),
                 ),
               ),
-      
+
               const SizedBox(height: 24),
-      
+
               // Chat information
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,14 +524,11 @@ class ChatDetailsPopUp extends StatelessWidget {
                   ),
                 ],
               ),
-      
+
               const SizedBox(height: 24),
-              const Divider(
-                height: 1,
-                color: AppColors.border,
-              ),
+              const Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 20),
-      
+
               if (participants.isNotEmpty) ...[
                 Text(
                   'Members (${participants.length})',
@@ -545,4 +558,3 @@ class ChatDetailsPopUp extends StatelessWidget {
     );
   }
 }
-

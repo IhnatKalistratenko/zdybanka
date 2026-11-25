@@ -10,6 +10,7 @@ import '../../services/tag_service.dart';
 import '../../tools.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/event_details_widget.dart';
+import '../../widgets/api_status_banners.dart';
 
 class EventsPage extends StatefulWidget {
   static final String pageRoute = "/events";
@@ -66,7 +67,14 @@ class _EventsPageState extends State<EventsPage> {
           startFrom: startFrom?.toUtc(),
           endTo: endTo == null
               ? null
-              : DateTime(endTo!.year, endTo!.month, endTo!.day, 23, 59, 59).toUtc(),
+              : DateTime(
+                  endTo!.year,
+                  endTo!.month,
+                  endTo!.day,
+                  23,
+                  59,
+                  59,
+                ).toUtc(),
           userLongitude: userPosition.longitude,
           userLatitude: userPosition.latitude,
           radiusMeters: maxDistanceKm * 1000,
@@ -84,6 +92,7 @@ class _EventsPageState extends State<EventsPage> {
         isLoading = false;
       });
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
 
       setState(() {
@@ -107,6 +116,7 @@ class _EventsPageState extends State<EventsPage> {
         isLoadingTags = false;
       });
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
         tagErrorMessage = _errorText(error, 'Could not load tags.');
@@ -116,21 +126,16 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   String _errorText(Object error, String fallback) {
-    final message = error.toString().trim();
+    final message = apiErrorMessage(error, fallback: fallback);
     return message.isEmpty ? fallback : message;
   }
 
-  Future<void> _pickDate({
-    required bool isStart,
-  }) async {
+  Future<void> _pickDate({required bool isStart}) async {
     final selected = await showDatePicker(
       context: context,
-      initialDate: (isStart ? startFrom : endTo) ??
-          DateTime.now(),
+      initialDate: (isStart ? startFrom : endTo) ?? DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(
-        const Duration(days: 365),
-      ),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
     if (selected == null) return;
@@ -167,7 +172,6 @@ class _EventsPageState extends State<EventsPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find event'),
@@ -190,18 +194,14 @@ class _EventsPageState extends State<EventsPage> {
                 children: [
                   Text(
                     'Events found',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const Spacer(),
                   Text('${events.length}'),
                 ],
               ),
             ),
-            Expanded(
-              child: _buildEventList(events),
-            ),
+            Expanded(child: _buildEventList(events)),
           ],
         ),
       ),
@@ -211,10 +211,7 @@ class _EventsPageState extends State<EventsPage> {
   Widget _buildFilters() {
     return ExpansionTile(
       initiallyExpanded: false,
-      title: const Text(
-        'Filters',
-        style: AppTypography.titleSmall,
-      ),
+      title: const Text('Filters', style: AppTypography.titleSmall),
       leading: const Icon(Icons.tune),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       children: [
@@ -237,10 +234,7 @@ class _EventsPageState extends State<EventsPage> {
         ),
         Align(
           alignment: Alignment.centerLeft,
-          child: Text(
-            'Tags',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          child: Text('Tags', style: Theme.of(context).textTheme.titleSmall),
         ),
         const SizedBox(height: 6),
         if (isLoadingTags)
@@ -258,24 +252,24 @@ class _EventsPageState extends State<EventsPage> {
           )
         else
           Wrap(
-          spacing: 8,
-          runSpacing: 0,
-          children: availableTags.map((tag) {
-            return FilterChip(
-              label: Text(tag.name),
-              selected: selectedTags.contains(tag.id),
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    selectedTags.add(tag.id);
-                  } else {
-                    selectedTags.remove(tag.id);
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
+            spacing: 8,
+            runSpacing: 0,
+            children: availableTags.map((tag) {
+              return FilterChip(
+                label: Text(tag.name),
+                selected: selectedTags.contains(tag.id),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      selectedTags.add(tag.id);
+                    } else {
+                      selectedTags.remove(tag.id);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -284,9 +278,7 @@ class _EventsPageState extends State<EventsPage> {
                 onPressed: () => _pickDate(isStart: true),
                 icon: const Icon(Icons.calendar_month),
                 label: Text(
-                  startFrom == null
-                      ? 'Starting from'
-                      : _formatDate(startFrom!),
+                  startFrom == null ? 'Starting from' : _formatDate(startFrom!),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -297,9 +289,7 @@ class _EventsPageState extends State<EventsPage> {
                 onPressed: () => _pickDate(isStart: false),
                 icon: const Icon(Icons.event_available),
                 label: Text(
-                  endTo == null
-                      ? 'Ending by'
-                      : _formatDate(endTo!),
+                  endTo == null ? 'Ending by' : _formatDate(endTo!),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -314,18 +304,9 @@ class _EventsPageState extends State<EventsPage> {
             isDense: true,
           ),
           items: const [
-            DropdownMenuItem(
-              value: 'StartDate',
-              child: Text('Start date'),
-            ),
-            DropdownMenuItem(
-              value: 'Distance',
-              child: Text('Distance'),
-            ),
-            DropdownMenuItem(
-              value: 'Name',
-              child: Text('Name'),
-            ),
+            DropdownMenuItem(value: 'StartDate', child: Text('Start date')),
+            DropdownMenuItem(value: 'Distance', child: Text('Distance')),
+            DropdownMenuItem(value: 'Name', child: Text('Name')),
           ],
           onChanged: (value) {
             if (value != null) {
@@ -356,9 +337,7 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildEventList(List<Event> filtered) {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (errorMessage != null) {
@@ -402,9 +381,7 @@ class _EventsPageState extends State<EventsPage> {
 
         return EventCard(
           event: event,
-          trailing: EventDistanceTrailing(
-            distanceKm: event.distanceKm,
-          ),
+          trailing: EventDistanceTrailing(distanceKm: event.distanceKm),
           onTap: () => showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,

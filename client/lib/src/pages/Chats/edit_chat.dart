@@ -1,8 +1,8 @@
-
 import 'package:client/src/theme/app_typography.dart';
 import 'package:client/src/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:client/src/services/chat_service.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 
 class EditChatPage extends StatefulWidget {
   final String chatId;
@@ -37,9 +37,7 @@ class _EditChatPageState extends State<EditChatPage> {
   void initState() {
     super.initState();
 
-    _nameController = TextEditingController(
-      text: widget.initialName,
-    );
+    _nameController = TextEditingController(text: widget.initialName);
 
     _descriptionController = TextEditingController(
       text: widget.initialDescription ?? '',
@@ -63,15 +61,15 @@ class _EditChatPageState extends State<EditChatPage> {
     final name = value?.trim() ?? '';
 
     if (name.isEmpty) {
-      return 'Назва чату є обов’язковою.';
+      return 'Chat name is required.';
     }
 
     if (name.length < 3) {
-      return 'Назва повинна містити щонайменше 3 символи.';
+      return 'Chat name must be at least 3 characters long.';
     }
 
     if (name.length > 50) {
-      return 'Назва не може перевищувати 50 символів.';
+      return 'Chat name cannot be longer than 50 characters.';
     }
 
     return null;
@@ -81,7 +79,7 @@ class _EditChatPageState extends State<EditChatPage> {
     final description = value?.trim() ?? '';
 
     if (description.length > 1000) {
-      return 'Опис не може перевищувати 1000 символів.';
+      return 'Description cannot be longer than 1,000 characters.';
     }
 
     return null;
@@ -109,11 +107,14 @@ class _EditChatPageState extends State<EditChatPage> {
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Не вдалося зберегти зміни чату. $error'),
+          content: Text(
+            apiErrorMessage(error, fallback: 'Could not save chat changes.'),
+          ),
         ),
       );
     } finally {
@@ -128,9 +129,7 @@ class _EditChatPageState extends State<EditChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Редагування чату'),
-      ),
+      appBar: AppBar(title: const Text('Edit chat')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -139,13 +138,17 @@ class _EditChatPageState extends State<EditChatPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Редагування чату',
-                style: AppTypography.headingSmall.copyWith(color: AppColors.textPrimary),
+                'Edit chat',
+                style: AppTypography.headingSmall.copyWith(
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 5),
               Text(
-                'Змініть назву та опис вашого чату.',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                'Change your chat name and description.',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
 
               const Padding(
@@ -154,14 +157,9 @@ class _EditChatPageState extends State<EditChatPage> {
               ),
 
               // Chat name
-              const Text(
-                'Назва чату',
-                style: AppTypography.title,
-              ),
+              const Text('Chat name', style: AppTypography.title),
               const SizedBox(height: 5),
-              const Text(
-                'Назва відображатиметься у списку чатів.',
-              ),
+              const Text('This name will appear in the chat list.'),
               const SizedBox(height: 12),
 
               TextFormField(
@@ -170,8 +168,8 @@ class _EditChatPageState extends State<EditChatPage> {
                 maxLength: 50,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
-                  labelText: 'Назва',
-                  hintText: 'Введіть назву чату',
+                  labelText: 'Name',
+                  hintText: 'Enter a chat name',
                   counterText: '',
                 ),
               ),
@@ -183,7 +181,9 @@ class _EditChatPageState extends State<EditChatPage> {
                   builder: (context, value, child) {
                     return Text(
                       '${value.text.length}/50',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     );
                   },
                 ),
@@ -195,14 +195,11 @@ class _EditChatPageState extends State<EditChatPage> {
               ),
 
               // Chat description
-              const Text(
-                'Опис чату',
-                style: AppTypography.title,
-              ),
+              const Text('Chat description', style: AppTypography.title),
               const SizedBox(height: 5),
               const Text(
-                'Коротко розкажіть, для чого створено цей чат. '
-                    'Поле необов’язкове.',
+                'Briefly describe what this chat is for. '
+                'This field is optional.',
               ),
               const SizedBox(height: 12),
 
@@ -214,8 +211,8 @@ class _EditChatPageState extends State<EditChatPage> {
                 minLines: 3,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
-                  labelText: 'Опис',
-                  hintText: 'Введіть опис чату',
+                  labelText: 'Description',
+                  hintText: 'Enter a chat description',
                   alignLabelWithHint: true,
                   counterText: '',
                 ),
@@ -228,7 +225,9 @@ class _EditChatPageState extends State<EditChatPage> {
                   builder: (context, value, child) {
                     return Text(
                       '${value.text.length}/1000',
-                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     );
                   },
                 ),
@@ -239,20 +238,24 @@ class _EditChatPageState extends State<EditChatPage> {
               // One button for both fields
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving || !_hasChanges ? null : _saveChanges,
-                  child: _isSaving
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.onPrimary,
-                    ),
-                  )
-                      : const Text(
-                    'Зберегти зміни',
-                    style: AppTypography.button,
+                child: DegradedModeBuilder(
+                  builder: (context, isDegraded) => ElevatedButton(
+                    onPressed: isDegraded || _isSaving || !_hasChanges
+                        ? null
+                        : _saveChanges,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.onPrimary,
+                            ),
+                          )
+                        : const Text(
+                            'Save changes',
+                            style: AppTypography.button,
+                          ),
                   ),
                 ),
               ),

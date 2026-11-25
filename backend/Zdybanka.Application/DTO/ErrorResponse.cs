@@ -2,17 +2,20 @@ namespace Zdybanka.Application.DTO;
 
 public record ErrorResponse
 {
-    public required string Error { get; set; }
+    public required string Message { get; set; }
     public required string Code { get; set; }
     public Dictionary<string, string> Details { get; set; } = new Dictionary<string, string>();
+    public string RequestId { get; set; }
 }
 
 public static class ErrorCodes
 {
     public const string UserNotFound = "USER_NOT_FOUND";
     public const string UserAlreadyExists = "USER_ALREADY_EXISTS";
+    public const string Forbidden = "FORBIDDEN";
     public const string Unauthorized = "UNAUTHORIZED";
-    public const string WrongPassword = "WRONG_PASSWORD";
+    public const string InvalidArgument = "INVALID_ARGUMENT";
     public const string ServerError = "SERVER_ERROR";
     public const string NotFound = "NOT_FOUND";
+    public const string RetryAfter = "RETRY_AFTER";
 }

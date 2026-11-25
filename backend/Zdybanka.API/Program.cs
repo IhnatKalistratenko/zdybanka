@@ -1,10 +1,12 @@
 
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Zdybanka.API.Middlewares;
 using Zdybanka.API.Hubs;
 using Zdybanka.Application.Services;
 using Zdybanka.Core;
@@ -14,6 +16,7 @@ using Zdybanka.Data.Repositories;
 using Zdybanka.Infrastructure.PasswordHasher;
 using Zdybanka.Infrastructure.TokenValidation;
 using Zdybanka.API.Policies;
+using Zdybanka.Application.DTO;
 
 namespace Zdybanka.API;
 
@@ -43,13 +46,55 @@ public class Program
         builder.Services.AddScoped<EventService>();
         builder.Services.AddScoped<MessageService>();
         builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<IdempotencyService>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ITagRepository, TagRepository>();
         builder.Services.AddScoped<IChatRepository, ChatRepository>();
         builder.Services.AddScoped<IEventRepository, EventRepository>();
         builder.Services.AddScoped<IMessageRepository, MessageRepository>();
         builder.Services.AddScoped<ITokenController, JwtTokenController>();
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddMemoryCache();
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.GlobalLimiter =
+                PartitionedRateLimiter.Create<HttpContext, string>(
+                    _ => RateLimitPartition.GetFixedWindowLimiter(
+                        "global",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 100,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+
+            options.RejectionStatusCode = 429;
+            
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                var retryAfter = TimeSpan.FromMinutes(1);
+
+                if (context.Lease.TryGetMetadata(
+                        MetadataName.RetryAfter,
+                        out var retryAfterMetadata))
+                {
+                    retryAfter = retryAfterMetadata;
+                }
+
+                context.HttpContext.Response.Headers.RetryAfter =
+                    Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new ErrorResponse
+                    {
+                        Message = "Too many requests",
+                        Code = ErrorCodes.RetryAfter,
+                        RequestId = context.HttpContext.Response.Headers["X-Request-Id"].FirstOrDefault()!
+                    },
+                    cancellationToken);
+            };
+        });
 
         builder.Services.AddSignalR();
 
@@ -112,10 +157,15 @@ public class Program
         {
             app.MapOpenApi();
         }
+        
+        app.UseExceptionHandler(_ => { });
+        app.UseMiddleware<RequestIdMiddleware>();
 
         app.UseHttpsRedirection();
         
         app.UseCors();
+        
+        app.UseRateLimiter();
 
         app.UseAuthentication();
         app.UseAuthorization();

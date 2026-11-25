@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/event.dart';
 import '../services/event_service.dart';
 import '../pages/Events/event_edit.dart';
+import 'api_status_banners.dart';
 
 /// Shared event details UI. Subclasses provide the action for the user's
 /// relationship to the event.
@@ -99,6 +100,9 @@ abstract class _EventDetailsState<T extends EventDetailsWidget>
               );
             }
             if (snapshot.hasError || !snapshot.hasData) {
+              if (snapshot.hasError) {
+                dismissGlobalApiErrorWhenHandled(snapshot.error);
+              }
               return const Padding(
                 padding: EdgeInsets.all(24),
                 child: Text('Could not load event details.'),
@@ -213,9 +217,14 @@ class _JoinableEventDetailsState
         const SnackBar(content: Text('You joined the event.')),
       );
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not join event: $error')),
+        SnackBar(
+          content: Text(
+            apiErrorMessage(error, fallback: 'Could not join the event.'),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isJoining = false);
@@ -226,16 +235,21 @@ class _JoinableEventDetailsState
   Widget buildEventAction(BuildContext context, Event event) {
     return SizedBox(
       width: double.infinity,
-      child: FilledButton(
-        onPressed: _isJoining || event.participantsCount >= event.maxParticipants
-            ? null
-            : () => _handleJoinEvent(event),
-        child: Text(
-          _isJoining
-              ? 'Joining...'
-              : event.participantsCount >= event.maxParticipants
-              ? 'No spots available'
-              : 'Join event',
+      child: DegradedModeBuilder(
+        builder: (context, isDegraded) => FilledButton(
+          onPressed:
+              isDegraded ||
+                  _isJoining ||
+                  event.participantsCount >= event.maxParticipants
+              ? null
+              : () => _handleJoinEvent(event),
+          child: Text(
+            _isJoining
+                ? 'Joining...'
+                : event.participantsCount >= event.maxParticipants
+                ? 'No spots available'
+                : 'Join event',
+          ),
         ),
       ),
     );
@@ -260,9 +274,14 @@ class _JoinedEventDetailsState
         const SnackBar(content: Text('You left the event.')),
       );
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not leave event: $error')),
+        SnackBar(
+          content: Text(
+            apiErrorMessage(error, fallback: 'Could not leave the event.'),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLeaving = false);
@@ -273,9 +292,13 @@ class _JoinedEventDetailsState
   Widget buildEventAction(BuildContext context, Event event) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton(
-        onPressed: _isLeaving ? null : () => _handleLeaveEvent(event),
-        child: Text(_isLeaving ? 'Leaving...' : 'Leave event'),
+      child: DegradedModeBuilder(
+        builder: (context, isDegraded) => OutlinedButton(
+          onPressed: isDegraded || _isLeaving
+              ? null
+              : () => _handleLeaveEvent(event),
+          child: Text(_isLeaving ? 'Leaving...' : 'Leave event'),
+        ),
       ),
     );
   }
@@ -296,9 +319,11 @@ class _OwnedEventDetailsState
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+          DegradedModeBuilder(
+            builder: (context, isDegraded) => FilledButton(
+              onPressed: isDegraded ? null : () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
           ),
         ],
       ),
@@ -314,11 +339,16 @@ class _OwnedEventDetailsState
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Event deleted.')));
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       widget.onDeleteCallback?.call();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not delete event: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            apiErrorMessage(error, fallback: 'Could not delete the event.'),
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -337,15 +367,19 @@ class _OwnedEventDetailsState
           label: const Text('Edit event'),
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _isDeleting ? null : () => _deleteEvent(context, event),
-          icon: _isDeleting
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.delete_outline),
-          label: const Text('Delete event'),
+        DegradedModeBuilder(
+          builder: (context, isDegraded) => OutlinedButton.icon(
+            onPressed: isDegraded || _isDeleting
+                ? null
+                : () => _deleteEvent(context, event),
+            icon: _isDeleting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.delete_outline),
+            label: const Text('Delete event'),
+          ),
         ),
       ],
     );

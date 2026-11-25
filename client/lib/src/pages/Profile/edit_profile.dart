@@ -1,9 +1,12 @@
 import 'dart:async';
+
 import 'package:client/src/theme/app_typography.dart';
 import 'package:client/src/theme/app_colors.dart';
 import 'package:client/src/services/user_service.dart';
 import 'package:client/src/widgets/error_card.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 import 'package:flutter/material.dart';
+
 import '../../models/user.dart';
 
 class EditProfile extends StatefulWidget {
@@ -34,12 +37,15 @@ class _EditProfileState extends State<EditProfile> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text("Failed to load user: ${snapshot.error}"));
+            dismissGlobalApiErrorWhenHandled(snapshot.error);
+            return Center(child: Text(apiErrorMessage(snapshot.error!)));
           }
 
           final user = snapshot.data;
           if (user == null) {
-            return const Center(child: Text("User information is unavailable."));
+            return const Center(
+              child: Text("User information is unavailable."),
+            );
           }
 
           return SingleChildScrollView(
@@ -48,10 +54,7 @@ class _EditProfileState extends State<EditProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Edit profile",
-                    style: AppTypography.headingSmall,
-                  ),
+                  const Text("Edit profile", style: AppTypography.headingSmall),
                   const Text("Manage your account settings"),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 0, vertical: 25),
@@ -129,13 +132,15 @@ class _UsernameFormState extends State<UsernameForm> {
         if (mounted) setState(() => _showSuccess = false);
       });
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
         _errorMessage = ErrorCardContent(
           type: "Username update failed",
-          message: error is UserServiceException
-              ? error.message
-              : "Failed to update username. Please try again.",
+          message: apiErrorMessage(
+            error,
+            fallback: 'Could not update your username.',
+          ),
         );
       });
     } finally {
@@ -148,10 +153,7 @@ class _UsernameFormState extends State<UsernameForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Username",
-          style: AppTypography.title,
-        ),
+        Text("Username", style: AppTypography.title),
         SizedBox(height: 5),
         Text("Change the name displayed on your profile."),
         SizedBox(height: 5),
@@ -185,29 +187,33 @@ class _UsernameFormState extends State<UsernameForm> {
         if (_errorMessage != null) ErrorCard(error: _errorMessage!),
         if (_showSuccess)
           const SuccessCard(message: "Your username was successfully updated."),
-        ElevatedButton(
-          onPressed: _isSaving ||
-                  _usernameController.text.trim() == _originalUsername ||
-                  _usernameController.text.trim().isEmpty
-              ? null
-              : sendUsername,
-          style: ButtonStyle(
-            padding: WidgetStateProperty.fromMap(
-              <WidgetStatesConstraint, EdgeInsetsGeometry>{
-                WidgetState.any: EdgeInsetsGeometry.symmetric(
-                  vertical: 20,
-                  horizontal: 30,
-                ),
-              },
+        DegradedModeBuilder(
+          builder: (context, isDegraded) => ElevatedButton(
+            onPressed:
+                isDegraded ||
+                    _isSaving ||
+                    _usernameController.text.trim() == _originalUsername ||
+                    _usernameController.text.trim().isEmpty
+                ? null
+                : sendUsername,
+            style: ButtonStyle(
+              padding: WidgetStateProperty.fromMap(
+                <WidgetStatesConstraint, EdgeInsetsGeometry>{
+                  WidgetState.any: EdgeInsetsGeometry.symmetric(
+                    vertical: 20,
+                    horizontal: 30,
+                  ),
+                },
+              ),
             ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text("Save"),
           ),
-          child: _isSaving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text("Save"),
         ),
       ],
     );
@@ -225,7 +231,8 @@ class PasswordForm extends StatefulWidget {
 
 class _PasswordFormState extends State<PasswordForm> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   ErrorCardContent? _errorMessage;
   bool _showSuccess = false;
@@ -264,13 +271,15 @@ class _PasswordFormState extends State<PasswordForm> {
         if (mounted) setState(() => _showSuccess = false);
       });
     } catch (error) {
+      dismissGlobalApiErrorWhenHandled(error);
       if (!mounted) return;
       setState(() {
         _errorMessage = ErrorCardContent(
           type: "Password update failed",
-          message: error is UserServiceException
-              ? error.message
-              : "Failed to update password. Please try again.",
+          message: apiErrorMessage(
+            error,
+            fallback: 'Could not update your password.',
+          ),
         );
       });
     } finally {
@@ -290,10 +299,7 @@ class _PasswordFormState extends State<PasswordForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Password",
-          style: AppTypography.title,
-        ),
+        Text("Password", style: AppTypography.title),
         SizedBox(height: 5),
         Text("Enter your current password and choose a new one."),
         SizedBox(height: 5),
@@ -314,9 +320,7 @@ class _PasswordFormState extends State<PasswordForm> {
               ),
               const SizedBox(height: 10),
               TextFormField(
-                decoration: const InputDecoration(
-                  labelText: "New password",
-                ),
+                decoration: const InputDecoration(labelText: "New password"),
                 controller: _newPasswordController,
                 obscureText: true,
                 onChanged: (_) => _handlePasswordChanged(),
@@ -337,36 +341,39 @@ class _PasswordFormState extends State<PasswordForm> {
         if (_errorMessage != null) ErrorCard(error: _errorMessage!),
         if (_showSuccess)
           const SuccessCard(message: "Your password was successfully changed."),
-        ElevatedButton(
-          onPressed: _isSaving ||
-                  _newPasswordController.text.isEmpty ||
-                  _newPasswordController.text == _currentPasswordController.text
-              ? null
-              : sendPassword,
-          style: ButtonStyle(
-            padding: WidgetStateProperty.fromMap(
-              <WidgetStatesConstraint, EdgeInsetsGeometry>{
-                WidgetState.any: EdgeInsetsGeometry.symmetric(
-                  vertical: 20,
-                  horizontal: 30,
-                ),
-              },
+        DegradedModeBuilder(
+          builder: (context, isDegraded) => ElevatedButton(
+            onPressed:
+                isDegraded ||
+                    _isSaving ||
+                    _newPasswordController.text.isEmpty ||
+                    _newPasswordController.text ==
+                        _currentPasswordController.text
+                ? null
+                : sendPassword,
+            style: ButtonStyle(
+              padding: WidgetStateProperty.fromMap(
+                <WidgetStatesConstraint, EdgeInsetsGeometry>{
+                  WidgetState.any: EdgeInsetsGeometry.symmetric(
+                    vertical: 20,
+                    horizontal: 30,
+                  ),
+                },
+              ),
             ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text("Save"),
           ),
-          child: _isSaving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text("Save"),
         ),
       ],
     );
   }
 }
-
-
 
 class SuccessCard extends StatelessWidget {
   final String message;
@@ -387,15 +394,11 @@ class SuccessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.info),
-                  SizedBox(width: 5,),
-                  Text("Success", style: AppTypography.titleMedium)
+                  SizedBox(width: 5),
+                  Text("Success", style: AppTypography.titleMedium),
                 ],
               ),
-              Row(
-                children: [
-                  Text(message),
-                ],
-              )
+              Row(children: [Text(message)]),
             ],
           ),
         ),
@@ -403,4 +406,3 @@ class SuccessCard extends StatelessWidget {
     );
   }
 }
-

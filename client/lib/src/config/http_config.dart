@@ -1,11 +1,12 @@
 import 'package:client/src/models/event_query.dart';
-import 'package:http/http.dart' as http;
+
 import '../models/event_boundary_request.dart';
+import '../services/api_client.dart';
 import '../services/auth_aware_http_client.dart';
 
 class ApiRoutes {
-  static final String baseUrl = "http://192.168.110.216:5000/api";
-  static final String baseSignalrUrl = "http://192.168.110.216:5000/hubs/chat";
+  static final String baseUrl = "http://192.168.43.113:5000/api";
+  static final String baseSignalrUrl = "http://192.168.43.113:5000/hubs/chat";
   static final String loginRoute = "$baseUrl/Auth/login";
   static final String registerRoute = "$baseUrl/User";
   static final String userRoute = "$baseUrl/User/me";
@@ -49,29 +50,38 @@ class ApiRoutes {
     if (queryParams.tags.isNotEmpty) {
       parameters['Tags'] = queryParams.tags.toList();
     }
-    if(queryParams.userStatus != null) {
+    if (queryParams.userStatus != null) {
       parameters['UserStatus'] = queryParams.userStatus;
     }
 
-    if(queryParams.orderMethod != null && queryParams.orderMethod!.isNotEmpty) {
-        parameters['OrderMethod'] = queryParams.orderMethod!.trim();
+    if (queryParams.orderMethod != null &&
+        queryParams.orderMethod!.isNotEmpty) {
+      parameters['OrderMethod'] = queryParams.orderMethod!.trim();
     }
-
 
     return Uri.parse(getEventsRoute)
         .replace(queryParameters: parameters)
         .toString();
   }
+
   static String buildGetEventsInBoundaries(EventBoundaryRequest queryParams) {
-    final parameters = <String, dynamic> {};
+    final parameters = <String, dynamic>{};
 
-    parameters["TopLeftCornerLongitude"] = queryParams.topLeftCornerLongitude.toString();
-    parameters["TopLeftCornerLatitude"] = queryParams.topLeftCornerLatitude.toString();
-    parameters["BottomRightCornerLongitude"] = queryParams.bottomRightCornerLongitude.toString();
-    parameters["BottomRightCornerLatitude"] = queryParams.bottomRightCornerLatitude.toString();
+    parameters["TopLeftCornerLongitude"] = queryParams.topLeftCornerLongitude
+        .toString();
+    parameters["TopLeftCornerLatitude"] = queryParams.topLeftCornerLatitude
+        .toString();
+    parameters["BottomRightCornerLongitude"] = queryParams
+        .bottomRightCornerLongitude
+        .toString();
+    parameters["BottomRightCornerLatitude"] = queryParams
+        .bottomRightCornerLatitude
+        .toString();
 
-    return Uri.parse(getEventsInBounds).replace(queryParameters: parameters).toString();
+    return Uri.parse(getEventsInBounds)
+        .replace(queryParameters: parameters)
+        .toString();
   }
 }
 
-final http.Client httpClient = AuthAwareHttpClient();
+final ApiClient apiClient = ApiClient(client: AuthAwareHttpClient());

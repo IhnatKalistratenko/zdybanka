@@ -14,7 +14,8 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
         <PackageReference Include="Shouldly" Version="5.0.0-preview.2" />
         <PackageReference Include="xunit" Version="2.9.3"/>
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"/>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +24,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Zdybanka.Application\Zdybanka.Application.csproj" />
+      <ProjectReference Include="..\Zdybanka.API\Zdybanka.API.csproj" />
       <ProjectReference Include="..\Zdybanka.Data\Zdybanka.Data.csproj" />
       <ProjectReference Include="..\Zdybanka.Infrastructure\Zdybanka.Infrastructure.csproj" />
     </ItemGroup>

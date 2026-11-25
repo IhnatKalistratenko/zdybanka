@@ -3,15 +3,12 @@ import 'dart:convert';
 import 'package:client/src/config/http_config.dart';
 import 'package:client/src/config/storage_config.dart';
 import 'package:client/src/models/user.dart';
+import 'package:client/src/services/api_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class UserServiceException implements Exception {
-  final String message;
-
-  UserServiceException({required this.message});
-
-  @override
-  String toString() => message;
+class UserServiceException extends ApiException {
+  UserServiceException({required String message})
+    : super(message: message, code: 'user_error');
 }
 
 class UserService {
@@ -23,23 +20,16 @@ class UserService {
       throw UserServiceException(message: "You are not authenticated.");
     }
 
-    final response = await httpClient
-        .get(
-          Uri.parse(ApiRoutes.userRoute),
-          headers: {
-            "Accept": "application/json",
-            "Authorization": "Bearer $token",
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await apiClient.get(
+      Uri.parse(ApiRoutes.userRoute),
+      headers: {"Accept": "application/json", "Authorization": "Bearer $token"},
+    );
 
     if (response.statusCode != 200) {
-      throw UserServiceException(
-        message: "Failed to load user information.",
-      );
+      throw UserServiceException(message: "Failed to load user information.");
     }
 
-    final data = jsonDecode(response.body);
+    final data = apiClient.decodeJson(response.body);
     if (data is! Map<String, dynamic>) {
       throw UserServiceException(message: "Invalid user information response.");
     }
@@ -60,25 +50,23 @@ class UserService {
       throw UserServiceException(message: "You are not authenticated.");
     }
 
-    final response = await httpClient
-        .patch(
-          Uri.parse(ApiRoutes.userByIdRoute(userId)),
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-          },
-          body: jsonEncode({
-            "username": username,
-            "newPassword": null,
-            "currentPassword": null
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await apiClient.patch(
+      Uri.parse(ApiRoutes.userByIdRoute(userId)),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "username": username,
+        "newPassword": null,
+        "currentPassword": null,
+      }),
+    );
 
     if (response.statusCode != 200) {
       String message = "Failed to update username.";
       try {
-        final data = jsonDecode(response.body);
+        final data = apiClient.decodeJson(response.body);
         if (data is Map && data["error"] is String) {
           message = data["error"] as String;
         }
@@ -88,7 +76,7 @@ class UserService {
       throw UserServiceException(message: message);
     }
 
-    final data = jsonDecode(response.body);
+    final data = apiClient.decodeJson(response.body);
     if (data is! Map<String, dynamic>) {
       throw UserServiceException(message: "Invalid user information response.");
     }
@@ -110,25 +98,23 @@ class UserService {
       throw UserServiceException(message: "You are not authenticated.");
     }
 
-    final response = await httpClient
-        .patch(
-          Uri.parse(ApiRoutes.userByIdRoute(userId)),
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $token",
-          },
-          body: jsonEncode({
-            "confirmPassword": currentPassword,
-            "newPassword": newPassword,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await apiClient.patch(
+      Uri.parse(ApiRoutes.userByIdRoute(userId)),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({
+        "confirmPassword": currentPassword,
+        "newPassword": newPassword,
+      }),
+    );
 
     if (response.statusCode != 200) {
       String message = "Failed to update password.";
       try {
-        final data = jsonDecode(response.body);
+        final data = apiClient.decodeJson(response.body);
         if (data is Map && data["error"] is String) {
           message = data["error"] as String;
         }

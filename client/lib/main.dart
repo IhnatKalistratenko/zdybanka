@@ -2,6 +2,7 @@ import 'package:client/src/config/route_config.dart';
 import 'package:client/src/pages/Authorization/login.dart';
 import 'package:client/src/services/auth_session.dart';
 import 'package:client/src/theme/app_theme.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -21,6 +22,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(theme: AppTheme.light, routerConfig: router);
+    return MaterialApp.router(
+      theme: AppTheme.light,
+      routerConfig: router,
+      builder: (context, child) =>
+          ApiStatusBanners(child: child ?? const SizedBox.shrink()),
+    );
   }
 }

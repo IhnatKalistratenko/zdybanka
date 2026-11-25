@@ -2,6 +2,7 @@ import 'package:client/src/theme/app_colors.dart';
 import 'package:client/src/theme/app_typography.dart';
 import 'package:client/src/theme/app_theme.dart';
 import 'package:client/src/services/chat_service.dart';
+import 'package:client/src/widgets/api_status_banners.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/chat_view.dart';
@@ -28,10 +29,7 @@ class _ChatsPageState extends State<ChatsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Chats",
-          style: AppTypography.headingMedium,
-        ),
+        title: const Text("Chats", style: AppTypography.headingMedium),
         elevation: 0,
       ),
       body: SafeArea(
@@ -42,9 +40,13 @@ class _ChatsPageState extends State<ChatsPage> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
+              dismissGlobalApiErrorWhenHandled(snapshot.error);
               return Center(
                 child: Text(
-                  'Failed to load your chats. ${snapshot.error}',
+                  apiErrorMessage(
+                    snapshot.error!,
+                    fallback: 'Could not load your chats.',
+                  ),
                   textAlign: TextAlign.center,
                 ),
               );
@@ -111,10 +113,7 @@ class ChatCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 4,
-          vertical: 16,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
         child: Row(
           children: [
             Expanded(
@@ -155,6 +154,3 @@ class ChatCard extends StatelessWidget {
     );
   }
 }
-
-
-
