@@ -1,11 +1,8 @@
 using System.Data;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NetTopologySuite.Geometries;
-using Xunit.Sdk;
 using Zdybanka.Core;
-using Zdybanka.Core.Extensions;
 using Zdybanka.Core.Filters;
 using Zdybanka.Core.Models;
 using Zdybanka.Core.StorageInterfaces;

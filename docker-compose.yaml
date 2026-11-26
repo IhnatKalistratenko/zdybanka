@@ -1,0 +1,48 @@
+services:
+  web:
+    image: zdybanka-web:1.0.0
+    container_name: zdybanka-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    image: zdybanka-api:1.1.0
+    container_name: zdybanka-api
+    expose:
+      - "5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__ConnectionString: "Host=db;Port=5432;Database=zdybanka;Username=${DB_USER};Password=${DB_PASSWORD}"
+    restart: unless-stopped
+
+  db:
+    image: postgis/postgis:18-3.6
+    container_name: zdybanka-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_DB: zdybanka
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:

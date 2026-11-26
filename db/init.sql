@@ -2,34 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict dTJvwnDd0PosDb0N6Ya90bqXBAebybqmRwB7q85gmSVZkew7UgEkBDNNEPInDqC
+\restrict 2kt469sYfxsYmy7ULX8faVUeaU4YYGagR3XTByB32Wz3Utvfy0Zd7pHlfVGgtKv
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-DROP DATABASE zdybanka;
---
--- Name: zdybanka; Type: DATABASE; Schema: -; Owner: -
---
-
-CREATE DATABASE zdybanka WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'C.UTF-8';
-
-
-\unrestrict dTJvwnDd0PosDb0N6Ya90bqXBAebybqmRwB7q85gmSVZkew7UgEkBDNNEPInDqC
-\connect zdybanka
-\restrict dTJvwnDd0PosDb0N6Ya90bqXBAebybqmRwB7q85gmSVZkew7UgEkBDNNEPInDqC
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -122,6 +98,28 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: IdempotencyKeys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."IdempotencyKeys" (
+    "Id" uuid DEFAULT gen_random_uuid() NOT NULL,
+    "Key" text NOT NULL,
+    "ResponseBody" text NOT NULL,
+    "CreatedAt" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: __EFMigrationsHistory; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL
+);
+
+
+--
 -- Name: chats; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -162,6 +160,20 @@ CREATE TABLE public.events (
     coordinates public.geography(Point,4326) NOT NULL,
     CONSTRAINT chk_event_time CHECK ((end_time > start_time)),
     CONSTRAINT events_max_participants_check CHECK ((max_participants > 0))
+);
+
+
+--
+-- Name: messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    chat_id uuid NOT NULL,
+    sender_id uuid NOT NULL,
+    content text NOT NULL,
+    sent_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT messages_content_check CHECK ((length(TRIM(BOTH FROM content)) > 0))
 );
 
 
@@ -210,67 +222,19 @@ CREATE TABLE public.users (
 
 
 --
--- Data for Name: chats; Type: TABLE DATA; Schema: public; Owner: -
+-- Name: IdempotencyKeys PK_IdempotencyKeys; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-COPY public.chats (id, event_id, name, description, status) FROM stdin;
-\.
-
-
---
--- Data for Name: event_tags; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.event_tags (event_id, tag_id) FROM stdin;
-\.
+ALTER TABLE ONLY public."IdempotencyKeys"
+    ADD CONSTRAINT "PK_IdempotencyKeys" PRIMARY KEY ("Id");
 
 
 --
--- Data for Name: events; Type: TABLE DATA; Schema: public; Owner: -
+-- Name: __EFMigrationsHistory PK___EFMigrationsHistory; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-COPY public.events (id, name, description, address, status, creator_id, created_at, start_time, end_time, max_participants, coordinates) FROM stdin;
-\.
-
-
---
--- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
-\.
-
-
---
--- Data for Name: tags; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.tags (id, name) FROM stdin;
-\.
-
-
---
--- Data for Name: user_chats; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.user_chats (user_id, chat_id, joined_at) FROM stdin;
-\.
-
-
---
--- Data for Name: user_events; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.user_events (user_id, event_id, joined_at) FROM stdin;
-\.
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.users (id, username, password_hash) FROM stdin;
-\.
+ALTER TABLE ONLY public."__EFMigrationsHistory"
+    ADD CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId");
 
 
 --
@@ -303,6 +267,14 @@ ALTER TABLE ONLY public.event_tags
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
 
 
 --
@@ -354,6 +326,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: IX_IdempotencyKeys_Key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "IX_IdempotencyKeys_Key" ON public."IdempotencyKeys" USING btree ("Key");
+
+
+--
 -- Name: event_creator_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -372,6 +351,13 @@ CREATE INDEX event_time_index ON public.events USING btree (start_time);
 --
 
 CREATE INDEX events_geo_index ON public.events USING gist (coordinates);
+
+
+--
+-- Name: idx_messages_chat_sent_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_messages_chat_sent_at ON public.messages USING btree (chat_id, sent_at);
 
 
 --
@@ -404,6 +390,22 @@ ALTER TABLE ONLY public.event_tags
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: messages messages_chat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id) ON DELETE CASCADE;
+
+
+--
+-- Name: messages messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -442,5 +444,5 @@ ALTER TABLE ONLY public.user_events
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dTJvwnDd0PosDb0N6Ya90bqXBAebybqmRwB7q85gmSVZkew7UgEkBDNNEPInDqC
+\unrestrict 2kt469sYfxsYmy7ULX8faVUeaU4YYGagR3XTByB32Wz3Utvfy0Zd7pHlfVGgtKv
 

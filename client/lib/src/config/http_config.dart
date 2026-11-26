@@ -5,22 +5,23 @@ import '../services/api_client.dart';
 import '../services/auth_aware_http_client.dart';
 
 class ApiRoutes {
-  static final String baseUrl = "http://192.168.43.113:5000/api";
-  static final String baseSignalrUrl = "http://192.168.43.113:5000/hubs/chat";
-  static final String loginRoute = "$baseUrl/Auth/login";
-  static final String registerRoute = "$baseUrl/User";
-  static final String userRoute = "$baseUrl/User/me";
-  static final String tagsRoute = "$baseUrl/Tag";
-  static final String createEventRoute = "$baseUrl/Event";
-  static final String getEventsRoute = "$baseUrl/Event";
-  static final String myEventsRoute = "$baseUrl/Event/me";
-  static final String getEventsInBounds = "$baseUrl/Event/in-bounds";
-  static final String getUserChats = "$baseUrl/Chat/me";
-  static String getChatById(String chatId) => "$baseUrl/Chat/$chatId";
-  static String updateChat(String chatId) => "$baseUrl/Chat/$chatId";
+  static final String baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:5000');
+  static final String baseApiUrl = "$baseUrl/api";
+  static final String baseSignalrUrl = "$baseUrl/hubs/chat";
+  static final String loginRoute = "$baseApiUrl/Auth/login";
+  static final String registerRoute = "$baseApiUrl/User";
+  static final String userRoute = "$baseApiUrl/User/me";
+  static final String tagsRoute = "$baseApiUrl/Tag";
+  static final String createEventRoute = "$baseApiUrl/Event";
+  static final String getEventsRoute = "$baseApiUrl/Event";
+  static final String myEventsRoute = "$baseApiUrl/Event/me";
+  static final String getEventsInBounds = "$baseApiUrl/Event/in-bounds";
+  static final String getUserChats = "$baseApiUrl/Chat/me";
+  static String getChatById(String chatId) => "$baseApiUrl/Chat/$chatId";
+  static String updateChat(String chatId) => "$baseApiUrl/Chat/$chatId";
   static String leaveEventRoute(String eventId) =>
-      "$baseUrl/Event/$eventId/leave";
-  static String userByIdRoute(String id) => "$baseUrl/User/$id";
+      "$baseApiUrl/Event/$eventId/leave";
+  static String userByIdRoute(String id) => "$baseApiUrl/User/$id";
 
   static String buildGetEventsFromQuery(EventQuery queryParams) {
     final parameters = <String, dynamic>{
