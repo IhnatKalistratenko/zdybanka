@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request::
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # 1
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      
+      # 2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      # 3
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+      
+      # 4
+      - name: Restore dependencies
+        run: dotnet restore backend/Zdybanka.slnx
+      
+      # 5
+      - name: Build Backend
+        run: dotnet build backend/Zdybanka.slnx --configuration Release --no-restore
+      
+      # 6
+      - name: Run Backend tests
+        run: >
+          dotnet test backend/Zdybanka.slnx
+          --configuration Release
+          --no-build
+          --no-restore
+          --collect:"XPlat Code Coverage"
+          --results-directory backend/TestResults
+          --logger "trx;LogFileName=backend-tests.trx"
+
+      # 7
+      - name: Upload Backend test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/TestResults/
+          if-no-files-found: warn
+          retention-days: 14
+          
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # 1. Отримуємо вихідний код.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # 2. Встановлюємо Flutter.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+
+      # 3. Кешуємо Pub залежності.
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('client/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # 4. Відновлюємо залежності.
+      - name: Install Flutter dependencies
+        working-directory: client
+        run: flutter pub get --enforce-lockfile
+
+      # 5. Аналізуємо код.
+      - name: Analyze Flutter code
+        working-directory: client
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # 6. Запускаємо тести.
+      - name: Run Flutter tests
+        working-directory: client
+        run: flutter test --reporter expanded
+
+      # 7. Збираємо Web-застосунок.
+      - name: Build Flutter Web
+        working-directory: client
+        run: flutter build web --release
+
+      # 8. Завантажуємо результат збірки.
+      - name: Upload Flutter Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-web-build
+          path: client/build/web/
+          if-no-files-found: error
+          retention-days: 14
