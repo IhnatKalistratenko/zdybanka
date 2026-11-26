@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  pull_request::
+  pull_request:
     branches:
       - main
 
@@ -69,7 +69,7 @@ jobs:
           path: backend/TestResults/
           if-no-files-found: warn
           retention-days: 14
-          
+
   frontend:
     name: Frontend CI
     runs-on: ubuntu-latest
